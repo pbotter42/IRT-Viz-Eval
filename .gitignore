@@ -30,5 +30,7 @@ paper/manuscript.pdf
 # Paid API runs remain local until reviewed for release.
 data/benchmark/openai_responses*.jsonl
 data/benchmark/openai_judgments*.jsonl
+data/benchmark/huggingface_responses*.jsonl
+data/benchmark/huggingface_judgments*.jsonl
 output/openai_analysis/
 output/submission/

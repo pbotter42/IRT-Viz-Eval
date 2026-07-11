@@ -93,6 +93,21 @@ judge result using `schemas/judgment.schema.json`.
 The same `tasks.jsonl` and response schema can support additional provider
 adapters. Do not commit API keys or unreviewed paid-run outputs.
 
+### Hugging Face Inference Providers
+
+After `hf auth login`, install the optional adapter and run a ten-task pilot:
+
+```bash
+python3 -m pip install -e '.[huggingface]'
+PYTHONPATH=src python3 -m irt_viz_eval.cli run-huggingface \
+  --models Qwen/Qwen3-VL-2B-Instruct:cheapest \
+  --limit 10
+```
+
+The default output is `data/benchmark/huggingface_responses.jsonl`. It is
+resumable and never overwrites the diagnostic baseline responses. Score it with
+the existing `judge` command, then analyze it using a separate output directory.
+
 ## Dataset Design
 
 Each simulated mathematical stimulus is rendered under several style profiles.

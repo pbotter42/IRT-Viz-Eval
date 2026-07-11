@@ -78,6 +78,27 @@ def cmd_run_openai(args: argparse.Namespace) -> None:
     )
 
 
+def cmd_run_huggingface(args: argparse.Namespace) -> None:
+    from .huggingface_runner import run_huggingface_models
+
+    tasks_path = Path(args.data) / "tasks.jsonl"
+    output_path = args.output or str(Path(args.data) / "huggingface_responses.jsonl")
+    counts = run_huggingface_models(
+        tasks_path=tasks_path,
+        output_path=output_path,
+        models=[part.strip() for part in args.models.split(",") if part.strip()],
+        repetitions=args.repetitions,
+        max_tokens=args.max_tokens,
+        limit=args.limit,
+        resume=not args.no_resume,
+        fail_fast=args.fail_fast,
+    )
+    print(
+        f"Hugging Face run: {counts['completed']} completed, "
+        f"{counts['failed']} failed, {counts['skipped']} skipped; output={output_path}"
+    )
+
+
 def cmd_all(args: argparse.Namespace) -> None:
     manifest = generate_benchmark(
         output_dir=args.data,
@@ -133,6 +154,17 @@ def build_parser() -> argparse.ArgumentParser:
     openai_run.add_argument("--no-resume", action="store_true", help="Do not skip completed response ids")
     openai_run.add_argument("--fail-fast", action="store_true", help="Stop on the first API error")
     openai_run.set_defaults(func=cmd_run_openai)
+
+    hf_run = subparsers.add_parser("run-huggingface", help="Run tasks through Hugging Face Inference Providers")
+    hf_run.add_argument("--data", default="data/benchmark")
+    hf_run.add_argument("--output", default=None)
+    hf_run.add_argument("--models", required=True, help="Comma-separated Hub model ids; append :cheapest if desired")
+    hf_run.add_argument("--repetitions", type=int, default=1)
+    hf_run.add_argument("--max-tokens", type=int, default=600)
+    hf_run.add_argument("--limit", type=int, default=None, help="Run only the first N tasks for a pilot")
+    hf_run.add_argument("--no-resume", action="store_true")
+    hf_run.add_argument("--fail-fast", action="store_true")
+    hf_run.set_defaults(func=cmd_run_huggingface)
 
     judge = subparsers.add_parser("judge", help="Score target-model responses with the deterministic rubric")
     judge.add_argument("--data", default="data/benchmark")
