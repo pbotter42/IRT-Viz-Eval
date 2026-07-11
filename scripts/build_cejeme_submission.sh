@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export SOURCE_DATE_EPOCH=1783728000
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="$ROOT/output/submission"
 SOURCE_DIR="$OUT/CEJEME_LaTeX_Source"
@@ -31,6 +33,8 @@ cp paper/generate_figures.py "$SUPPLEMENT_DIR/paper/"
 cp scripts/run_local_benchmark.sh "$SUPPLEMENT_DIR/scripts/"
 cp pyproject.toml requirements.txt requirements-openai.txt "$SUPPLEMENT_DIR/"
 cp submission/ANONYMOUS_SUPPLEMENT_README.md "$SUPPLEMENT_DIR/README.md"
+find "$SUPPLEMENT_DIR" -type d -name __pycache__ -prune -exec rm -rf {} +
+find "$SUPPLEMENT_DIR" -type f -name '*.pyc' -delete
 
 rm -f "$OUT/CEJEME_Anonymous_Code_Supplement.zip"
 (

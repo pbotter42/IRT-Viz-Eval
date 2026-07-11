@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from textwrap import fill
 
@@ -50,7 +51,13 @@ def setup() -> None:
 
 
 def save(fig: plt.Figure, name: str) -> None:
-    fig.savefig(OUT / f"{name}.pdf", bbox_inches="tight", facecolor="white")
+    stable_time = datetime(2026, 7, 11, tzinfo=timezone.utc)
+    fig.savefig(
+        OUT / f"{name}.pdf",
+        bbox_inches="tight",
+        facecolor="white",
+        metadata={"CreationDate": stable_time, "ModDate": stable_time},
+    )
     fig.savefig(OUT / f"{name}.png", bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
