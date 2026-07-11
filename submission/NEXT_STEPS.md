@@ -25,15 +25,16 @@ Real-model results are not required for the tutorial's benchmark-construction cl
 3. Check that the abstract is no more than 120 words and there are 3-5 keywords.
 4. Inspect all pages, tables, and 12 figures at readable zoom.
 5. Confirm the main document contains no author identity or public repository URL.
-6. Create an anonymized code supplement from the committed repository if requested by the editor.
+6. If requested by the editor, upload `output/submission/CEJEME_Anonymous_Code_Supplement.zip` as supplemental material.
 
 ## Upload to CEJEME
 
 1. Main Document: `output/submission/CEJEME_Main_Document.pdf`.
 2. LaTeX source: `output/submission/CEJEME_LaTeX_Source.zip`.
-3. Cover letter: use `CEJEME_Cover_Letter.md` after completing placeholders.
-4. Enter the title, abstract, 3-5 keywords, author metadata, and declarations in the submission form.
-5. Do not submit the manuscript elsewhere while CEJEME is considering it.
+3. Optional anonymous code supplement: `output/submission/CEJEME_Anonymous_Code_Supplement.zip`.
+4. Cover letter: use `CEJEME_Cover_Letter.md` after completing placeholders.
+5. Enter the title, abstract, 3-5 keywords, author metadata, and declarations in the submission form.
+6. Do not submit the manuscript elsewhere while CEJEME is considering it.
 
 ## After acceptance or the end of blind review
 
