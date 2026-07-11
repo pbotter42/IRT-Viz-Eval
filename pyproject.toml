@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "irt-viz-eval"
+version = "0.1.0"
+description = "A benchmark for evaluating multimodal AI interpretation of IRT and psychometric figures."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.23",
+    "pandas>=1.5",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+    "pillow>=9.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0"]
+test = ["pytest>=8.0", "jsonschema>=4.0"]
+
+[project.scripts]
+irt-viz-eval = "irt_viz_eval.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,509 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[hidelinks,hypertexnames=false]{hyperref}
+\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{float}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{setspace}
+
+\graphicspath{{figures/}{../output/analysis/}{../data/benchmark/images/}}
+\setlist{nosep,leftmargin=*}
+\captionsetup{font=small,labelfont=bf}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\doublespacing
+
+\title{How Large Language Model Benchmarks Are Built:\\
+A Measurement-Oriented Tutorial with IRT-Viz-Eval}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models are compared with benchmark scores, but building an LLM benchmark is not equivalent to constructing an educational or psychological assessment. This tutorial introduces benchmark development to an applied measurement audience through eight stages: defining intended use and the evaluated system, specifying capabilities and evidence, creating tasks and ground truth, standardizing prompting, assembling forms, scoring, validating, and maintaining the benchmark. IRT-Viz-Eval, a benchmark of vision-capable models' interpretation of item response theory graphics, illustrates each stage. Its generators produce 84 rendered stimuli and 198 tasks across six visual styles; diagnostic baselines test pipeline mechanics without being presented as model results. An executable protocol shows how researchers can administer it to versioned models, preserve provenance, quantify uncertainty, and bound claims.
+\end{abstract}
+
+\noindent\textbf{Keywords:} large language models, benchmark design, validity, educational measurement, item response theory
+
+\section{Why Social Scientists Need a Benchmarking Vocabulary}
+
+LLMs are increasingly used in research, education, public administration, and professional work. Social scientists may therefore encounter benchmark scores when selecting a model, evaluating an AI-assisted workflow, or making claims about what a model can do. A model may be described as stronger because it scores higher on a broad knowledge benchmark such as MMLU \citep{hendrycks2021mmlu}, a collaborative task collection such as BIG-bench \citep{srivastava2023bigbench}, or a work-sample evaluation such as SWE-bench \citep{jimenez2024swebench}. Yet a single number can conceal decisions about content, prompts, sampling, scoring, missing responses, and aggregation.
+
+The social sciences already possess a mature language for asking whether observed performances support intended interpretations. Construct validity, evidence-centered design, reliability, fairness, and consequences are central to educational and psychological assessment \citep{cronbach1955construct,messick1989validity,aera2014standards,kane2013validating,mislevy2003ecd}. AI evaluation researchers have begun to apply these ideas to benchmark design. In particular, Evidence-Centered Benchmark Design (ECBD) adapts evidence-centered assessment design to natural language processing and organizes benchmark decisions into capability, content, adaptation, assembly, and evidence modules \citep{liu2024ecbd}. Critical work similarly warns that broad benchmark labels can invite claims that exceed the actual task sample \citep{raji2021everything}. This paper builds on that bridge but is written as a practical introduction: what is an LLM benchmark, how is one made, what can go wrong, and what must be reported?
+
+Here, a \emph{benchmark} is a standardized procedure for eliciting observable behavior from one or more AI systems and comparing that behavior with a specified reference, rubric, distribution, or set of desiderata. A benchmark commonly includes data, tasks, prompts, scoring code, aggregation rules, model configuration, and documentation. A leaderboard is only one possible presentation of its results. A dataset alone is not a complete benchmark because it does not fully specify how a model encounters the data or how outputs become claims.
+
+IRT-Viz-Eval is used as a running case. It asks whether multimodal LLMs can interpret psychometric plots such as item characteristic curves, item and test information functions, test characteristic curves, category response curves, and non-monotonic ideal-point curves. The case is useful because the underlying mathematics provides exact ground truth, while the visual presentation can be manipulated independently. The benchmark itself remains substantively important, but its primary role in this article is to make the benchmark-construction process concrete.
+
+The article is therefore a methodological tutorial and illustrative review, not a leaderboard study. Diagnostic baselines establish that the software behaves as designed. They are deliberately separated from claims about the competence of actual models. This distinction matters for benchmark developers: real-model administrations are necessary before comparing systems or estimating model performance, but they are not a substitute for construct definition, content review, scoring validation, or a defensible interpretation. The worked example includes an executable administration protocol so that the empirical phase can be conducted transparently when a research question requires it.
+
+\section{A Benchmark Is Test-Like, but It Is Not a Human Assessment}
+
+The analogy between a benchmark and a test is productive if its limits are explicit. Figure~\ref{fig:two-traditions} places the two traditions side by side. In both, an object is placed under elicitation conditions, observable responses are scored, and the scores are used to support an inference. The major differences concern what the object is, how stable it is, what ``standardization'' requires, and what score use is defensible.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{assessment_vs_benchmark.pdf}
+\caption{Parallel anatomy of human assessment and LLM benchmarking. The figure is not claiming that the two enterprises are equivalent. It identifies their shared inferential structure while foregrounding the distinct object and conditions of an LLM benchmark.}
+\label{fig:two-traditions}
+\end{figure}
+
+\subsection{The object is a configured system}
+
+In most educational and psychological assessments, the object of inference is a person or group. In an LLM benchmark, ``the model'' is underspecified. Observable behavior may depend on model family, checkpoint or dated version, system message, user prompt, examples supplied in context, image resolution, enabled tools, retrieval corpus, temperature, maximum output length, and provider-side changes. The object is therefore better represented as a configured system: model + version + interface + adaptation condition. A result without this provenance may not be reproducible even when the benchmark items are public. HELM made standardization and release of raw prompts and completions central to transparent model comparison \citep{liang2022helm}; model cards and datasheets likewise emphasize documentation of intended use, provenance, and performance conditions \citep{mitchell2019modelcards,gebru2021datasheets}.
+
+\subsection{The response process is programmable and potentially stochastic}
+
+Human response processes vary, but a model adds distinctive sources of variability. A generative model can produce different outputs for the same input because of stochastic decoding or provider implementation. It may also return prose when a label was requested, refuse an item, call a tool, or generate malformed structured data. Prompt wording is part of the administration condition, not a neutral wrapper. Even answer-option order can change accuracy on a familiar multiple-choice benchmark \citep{gupta2024answerorder}. Consequently, a benchmark should preserve raw outputs, define parse-failure handling before analysis, and repeat administrations when stochasticity is relevant.
+
+\subsection{Exposure can invalidate the interpretation}
+
+In conventional testing, advance access to secure items threatens score interpretation. Public LLM benchmarks face an analogous but harder problem: model training corpora are enormous, often undisclosed, and may contain benchmark questions, answers, code, discussions, or task instructions. Contamination can therefore make memorization look like capability \citep{sainz2023contamination}. Procedures can sometimes detect exposure in black-box models with formal error control, but the general problem cannot be assumed away \citep{oren2024contamination}. Programmatic generation, newly sampled forms, private holdouts, release dates, and contamination audits are design responses, not complete guarantees.
+
+\subsection{Scores usually describe a task distribution, not a latent trait}
+
+A human test score is often interpreted as an estimate of standing on a psychological or educational construct, with a measurement model linking items to persons. Many LLM benchmark scores are simpler empirical summaries: average exact-match accuracy, mean rubric points, pass rate, preference rate, or error. They describe performance on sampled tasks under specified conditions. They do not automatically constitute a latent-variable scale, remain invariant across prompt changes, or support claims about general intelligence. The same benchmark name can also conceal a mixture of qualitatively different tasks. Data composition can affect absolute scores and model rankings, sometimes more than the choice of metric \citep{kovatchev2024transparency}. Scores from benchmarks aimed at similar capabilities may fail to concur \citep{sun2023validity}.
+
+\subsection{The scorer may itself be a model}
+
+Closed-form answers can often be scored deterministically. Open-ended generations require exact matching, structured rubrics, expert judgment, crowd judgment, learned metrics, or an LLM-as-a-judge. Model judges can scale evaluation, but they are measurement instruments and require validation. Agreement with human annotation varies markedly across tasks, properties, and judge models \citep{zheng2023judging,bavaresco2025judges}. A benchmark should therefore distinguish target model from judge model, preserve judge prompts and versions, and report human agreement or adjudication for a defensible sample.
+
+\begin{table}[!htbp]
+\centering
+\caption{Practical differences between assessments of people and benchmarks of LLM systems.}
+\label{tab:differences}
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}YY}
+\toprule
+Design issue & Educational or psychological assessment & LLM benchmark \\
+\midrule
+Object & Person, group, or population & Versioned model system under a specified interface \\
+Administration & Instructions, timing, setting, accommodations & Prompt, context examples, media preprocessing, tools, decoding, retries \\
+Response & Selected or constructed human performance & Generated tokens, tool calls, refusals, latency, malformed outputs \\
+Exposure threat & Item security, coaching, practice & Pretraining, fine-tuning, evaluation leakage, public prompt reuse \\
+Scoring & Key, rubric, rater, measurement model & Parser, executable check, metric, human rater, or model judge \\
+Repeatability & Affected by persons and occasions & Also affected by sampling seeds and silent model updates \\
+Typical claim & Standing on a construct or expected performance & Performance on a sampled task distribution under tested conditions \\
+Lifecycle & Forms are revised and revalidated & Public tasks can saturate or contaminate quickly; versions may drift \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The implication is neither that AI benchmarks are invalid nor that they must copy human testing. Rather, familiar validity principles need to be translated to a different object. Figure~\ref{fig:claim-chain} summarizes that translation. Design moves forward from an intended use to capability claims, observable evidence, tasks, and scores. Validation works backward and across the chain, asking whether each link is supported.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{claim_evidence_chain.pdf}
+\caption{The claim-to-evidence chain. A benchmark item is useful only when its response provides evidence relevant to a stated capability, and that capability is relevant to an intended use. Validation examines every link rather than treating the final score as self-interpreting.}
+\label{fig:claim-chain}
+\end{figure}
+
+\section{How an LLM Benchmark Is Built}
+
+Figure~\ref{fig:pipeline} presents an eight-stage construction process. It combines the evidentiary logic of ECBD \citep{liu2024ecbd}, the lifecycle perspective of BetterBench \citep{reuel2024betterbench}, and practices from behavioral testing, transparent evaluation, and dataset documentation. The stages are presented sequentially for teaching, although real development is iterative.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{benchmark_pipeline.pdf}
+\caption{An eight-stage benchmark workflow. Scope and construct decisions precede data generation; scoring is designed before claims are made; validation and maintenance are part of the benchmark rather than optional activities after publication.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Stage 1: Specify intended use and object of evaluation}
+
+Begin with the decision the benchmark is expected to inform. Candidate uses include scientific diagnosis of model behavior, comparison of models under a controlled research protocol, selection for a specific workflow, monitoring after deployment, or testing a hypothesized failure mode. ``Measure AI ability'' is too broad. A useful statement names users, systems, conditions, and boundaries. For example: ``IRT-Viz-Eval supports researchers and psychometric teams comparing vision-capable models for low-stakes assistance in interpreting clean, static IRT plots. It does not certify unsupervised operational decisions.''
+
+The object of evaluation must be equally explicit. Is it a base model, chat-tuned model, hosted product, retrieval-augmented application, or agent with tools? Can it access the internet? Is the image passed at native resolution? Are prompts zero-shot, few-shot, or optimized separately for each model? A benchmark result applies to this configuration.
+
+\subsection{Stage 2: Define capabilities and observable evidence}
+
+Capability labels should be narrow enough to operationalize. ``Reasoning'' is not an item specification. ``Identify the lower asymptote of a dichotomous item characteristic curve'' or ``estimate response probability at a marked trait value'' is more useful. For each capability, designers should state what a successful output would look like and what competing process could produce the same answer. This is the benchmark equivalent of distinguishing construct-relevant variance from construct-irrelevant variance.
+
+In IRT-Viz-Eval, visual psychometric interpretation is decomposed into model identification, parameter estimation, probability reading, information-peak localization, category-curve reasoning, test-level interpretation, and non-monotonic peak detection. The evidence is not merely a correct label. Numeric estimates and a brief rationale indicate which visible features the model used. The rationale is supportive process evidence, not privileged access to the model's internal computation.
+
+\subsection{Stage 3: Construct stimuli, tasks, and ground truth}
+
+There are three common content sources. First, experts can author and annotate items. This supports ecological relevance but is expensive and can introduce disagreement. Second, existing datasets can be repurposed. This is efficient but may import poorly documented assumptions and high contamination risk. Third, items can be generated programmatically or by models. This can produce scale, controlled variation, and exact answers, but synthetic regularities may allow shortcuts.
+
+The content specification should cross task types with capabilities, domains, difficulty conditions, and relevant populations or contexts. Behavioral testing is useful here. CheckList distinguishes minimum functionality tests, invariance tests, and directional expectation tests rather than relying only on aggregate held-out accuracy \citep{ribeiro2020checklist}. IRT-Viz-Eval includes minimum functionality tests such as reading a probability, and invariance tests in which the same curve is rendered under different styles. Figure~\ref{fig:matrix} shows the current content matrix. Empty cells are informative: they reveal where the benchmark does not provide evidence.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{design_matrix.pdf}
+\caption{IRT-Viz-Eval content specification. Rows define psychometric visual objects; columns define observable capabilities. Green cells identify included task combinations. The matrix makes both coverage and omissions visible before a total score is calculated.}
+\label{fig:matrix}
+\end{figure}
+
+Ground truth should be generated or annotated independently of the target model whenever possible. Executable tasks can be checked by running code or tests, as in SWE-bench \citep{jimenez2024swebench}. Quantitative figures can be linked to their underlying data table; ChartQA, for example, explicitly studies visual and logical reasoning over chart images and data \citep{masry2022chartqa}. IRT-Viz-Eval stores generating parameters and coordinates alongside each image, allowing exact answers to be derived rather than judged impressionistically.
+
+\subsection{Stage 4: Standardize adaptation and elicitation}
+
+An LLM rarely consumes a task without adaptation. The benchmark must specify the system prompt, user prompt, examples, output schema, media transformations, tool access, and decoding parameters. Adaptation can be standardized across models for comparability or tailored to each model for best-achievable performance; these answer different questions. A fair study may report both.
+
+Prompts should be piloted for comprehension and unintended cues. Structured output simplifies scoring but creates format-following demands. If JSON is required, researchers should report malformed-output rates rather than silently discarding them. When prompts are varied, results should be treated as a distribution over plausible administrations. Changes to answer order, formatting, or labels can function as invariance checks rather than nuisances \citep{gupta2024answerorder}.
+
+\subsection{Stage 5: Assemble forms and choose a sampling distribution}
+
+Benchmarks often conflate the item pool with the evaluated form. The assembly step determines which items a model actually receives and therefore what the score weights. Sampling should reflect the intended claim. Equal numbers per category estimate a balanced construct profile; prevalence-weighted sampling estimates performance under a target use distribution. Both are legitimate, but they are not interchangeable.
+
+Designers should specify exclusions, duplicate handling, train-development-test separation, random seeds, and whether all models receive identical forms. A benchmark should be large enough to make relevant comparisons stable, but item count alone does not guarantee coverage. BetterBench found that uncertainty reporting and easy replication were uncommon even among established benchmarks \citep{reuel2024betterbench}. Bootstrap intervals over items, repeated runs, and hierarchical models can separate item, model, and administration variation.
+
+\subsection{Stage 6: Score, aggregate, and preserve provenance}
+
+Scoring begins with the response representation. Exact matching is transparent but brittle. Numeric tolerance bands recognize approximate visual reading. Executable validation is strong when a task has a deterministic success condition. Human rubrics support nuanced outputs but require rater training and agreement analysis. LLM judges reduce cost but need task-specific human validation \citep{bavaresco2025judges}.
+
+Aggregation requires substantive justification. A mean can allow strength in one domain to compensate for failure in another. A worst-group or minimum-capability score encodes a different use. Accuracy and efficiency may conflict. HELM's multi-metric design illustrates why performance, robustness, fairness, calibration, toxicity, and efficiency should not automatically collapse into one rank \citep{liang2022helm}. At minimum, report total and disaggregated results, denominators, uncertainty, parse failures, refusals, and cost or latency where relevant.
+
+\subsection{Stage 7: Validate the benchmark and its interpretation}
+
+Validation is an accumulating argument, not a one-time coefficient. Useful evidence includes expert content review, item-level error analysis, comparison with human judgments, expected ordering of diagnostic baselines, robustness to nuisance transformations, convergence or divergence with related benchmarks, and prediction of performance in the intended workflow. Disagreement with another benchmark is not automatically a flaw, but it requires an account of why the constructs or task distributions differ \citep{sun2023validity}.
+
+Benchmark quality should itself be tested. Does an oracle obtain the ceiling? Does a deliberately corrupted response receive partial credit? Does a blind response perform near a meaningful floor? Do small visual changes that preserve the answer leave scores stable? Do changes intended to increase difficulty reduce performance? These checks resemble unit tests, simulation studies, and known-groups validity evidence.
+
+\subsection{Stage 8: Maintain, refresh, and retire}
+
+A public benchmark changes after release even if its files do not. Items can enter model training corpora, developers can optimize against the leaderboard, tasks can saturate, provider versions can drift, and intended uses can change. Dynabench treats data collection and evaluation as a dynamic human-and-model-in-the-loop process \citep{kiela2021dynabench}. A less resource-intensive project can still version releases, retain private or newly generated forms, publish change logs, monitor ceiling effects, and state retirement criteria.
+
+Figure~\ref{fig:maintenance} makes this lifecycle explicit. A benchmark has a validity window: a period during which its evidence supports stated comparisons under documented conditions. Release is therefore the start of monitoring, not the endpoint of design.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{maintenance_cycle.pdf}
+\caption{Benchmark maintenance cycle. Monitoring addresses exposure, model drift, and saturation; refreshes require renewed validation; retirement prevents unsupported historical comparisons from being treated as current evidence.}
+\label{fig:maintenance}
+\end{figure}
+
+\section{Worked Example: Constructing IRT-Viz-Eval}
+
+\subsection{Intended use and capability model}
+
+IRT-Viz-Eval is intended to support research on whether vision-capable language models can interpret visual artifacts used in educational measurement. It is not a certification exam for psychometricians and does not support autonomous high-stakes use. Its present domain is clean, static plots with known generating parameters. The capability claim is correspondingly bounded: under a documented prompt and image input condition, a model can recover psychometrically relevant properties from an IRT figure and explain the visible evidence for its answer.
+
+The substantive domain includes dichotomous 1PL, 2PL, 3PL, and 4PL item characteristic curves (ICCs); item information functions (IIFs); partial credit, generalized partial credit, and graded response category curves; test characteristic curves (TCCs); test information functions (TIFs); and a transparent non-monotonic ideal-point family. These objects have visible signatures connected to established IRT parameters \citep{rasch1960probabilistic,birnbaum1968latent,lord1980applications,samejima1969graded,andrich1978rating,muraki1992gpcm,roberts2000ggum}.
+
+\subsection{Programmatic content and factorial rendering}
+
+All stimuli are generated on a shared ability grid from $\theta=-4$ to $4$. Dichotomous response probabilities use
+
+\begin{equation}
+P_i(\theta)=c_i+\frac{d_i-c_i}{1+\exp[-1.7a_i(\theta-b_i)]},
+\end{equation}
+
+where $a_i$ is discrimination, $b_i$ is difficulty, $c_i$ is the lower asymptote, and $d_i$ is the upper asymptote. Item information is
+
+\begin{equation}
+I_i(\theta)=\frac{[P_i'(\theta)]^2}{P_i(\theta)[1-P_i(\theta)]}.
+\end{equation}
+
+TCCs and TIFs sum item response and information functions. Polytomous curves are produced from PCM, GPCM, and GRM probability functions. The non-monotonic stress test uses
+
+\begin{equation}
+P_i(\theta)=l_i+(u_i-l_i)\exp\left[-\frac{1}{2}\left(\frac{\theta-\delta_i}{\sigma_i}\right)^2\right].
+\end{equation}
+
+This final family is an interpretable ideal-point curve rather than a full GGUM implementation; its purpose is to test detection and localization of non-monotonicity.
+
+Programmatic generation separates mathematical content from presentation. As Figure~\ref{fig:expansion} shows, the local validation contained 14 base mathematical stimuli. Each was rendered under six style profiles, creating 84 images and 198 linked tasks. This factorial structure makes it possible to compare responses to the same mathematical object under changed visual conditions.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{factorial_expansion.pdf}
+\caption{Expansion of the local IRT-Viz-Eval validation set. The multiplication by rendering profile changes visual presentation while preserving the underlying parameters and expected answers. Different images generate different numbers of tasks, producing 198 total task records.}
+\label{fig:expansion}
+\end{figure}
+
+\subsection{Invariance as a designed source of evidence}
+
+Six profiles vary background, palette, gridline strength, tick density, legend placement, and line width: Matplotlib light, Seaborn white-grid, ggplot-like gray, grayscale without a grid, dark high-contrast, and lattice-like. Figure~\ref{fig:styles} displays the same 2PL ICC in all six conditions. Because the mathematical curve is held fixed, a drop associated with style is interpretable as a visual robustness failure rather than a harder IRT item. This is a benchmark analogue of an invariance test \citep{ribeiro2020checklist}.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{style_invariance.pdf}
+\caption{Six renderings of one underlying 2PL item characteristic curve. The curve coordinates and ground truth are identical. Variation in model performance across panels therefore diagnoses sensitivity to presentation rather than psychometric content.}
+\label{fig:styles}
+\end{figure}
+
+The current styles are controlled perturbations, not a representative sample of all real psychometric software. Future forms should add confidence bands, empirical noise, dense multi-item overlays, mislabeled or truncated axes, grayscale printing artifacts, and plots exported from operational systems. These additions would extend the claim from clean synthetic figures toward the figures encountered in practice.
+
+\subsection{One benchmark instance as an evidence record}
+
+Figure~\ref{fig:instance} shows why an item image alone is not the benchmark. A complete instance links the image to a standardized prompt, requested response schema, expected fields, field-specific thresholds, provenance, and raw output. The example asks for four dichotomous item parameters. The target output is compact JSON plus a rationale. The benchmark stores both parsed values and the original output so scoring decisions can be audited.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{instance_anatomy.pdf}
+\caption{Anatomy of an IRT-Viz-Eval instance. The stimulus, elicitation, structured observation, ground truth, and provenance together form the unit of evidence. Keeping these links prevents an image file or a score from becoming detached from its administration conditions.}
+\label{fig:instance}
+\end{figure}
+
+The repository writes four linked JSONL files. A stimulus record contains the base stimulus identifier, curve family, IRT model, parameters, coordinate path, image path, and visual metadata. A task record contains the prompt, expected fields, and thresholds. A response record contains model identity, decoding settings, latency, raw output, and parsed output. A judgment record contains field-level scores, rationale score, total, normalized score, and judge provenance. JSON schemas permit automated validation and make missing provenance visible.
+
+\subsection{Scoring design}
+
+Categorical and integer fields receive exact-match credit after conservative normalization. Numeric fields use task-specific absolute-error bands. In the common parameter example, errors within 0.15, 0.30, and 0.50 receive 3, 2, and 1 points; larger errors receive 0. Probability-reading tasks use tighter bands of 0.05, 0.10, and 0.20. A rationale can add up to two points for relevant visual evidence. Scores are normalized by the maximum available points for that task because task families request different numbers of fields.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.94\linewidth]{scoring_logic.pdf}
+\caption{Illustration of IRT-Viz-Eval scoring. The left panel shows tolerance-band scoring for a numeric field. The right panel shows why component scores are retained before normalization: answer accuracy and rationale evidence can be inspected separately. Point totals are illustrative because the number of answer fields differs by task.}
+\label{fig:scoring}
+\end{figure}
+
+Figure~\ref{fig:scoring} emphasizes two choices. First, visual reading is approximate, so a graded numeric rubric is more informative than exact string equality. Second, the normalized total is not the only result. Field errors, rationale quality, format compliance, and task type remain available for diagnosis. A future validation study should ask experts to score a stratified sample and estimate agreement with both the deterministic rubric and any LLM judge.
+
+\section{From Benchmark Prototype to Actual Model Administration}
+
+\subsection{What the local baselines establish}
+
+The local validation used seed 20260711 and one sampled base instance per model family. It produced 84 rendered stimuli and 198 tasks. Three deterministic baselines generated 594 responses: an oracle copied expected answers, a noisy baseline perturbed correct answers, and a blind baseline returned generic guesses. These are software diagnostics, not language models and not estimates of real-world performance.
+
+The expected ordering appeared overall and within every task family. The oracle mean normalized score was 1.00, the noisy baseline was 0.73, and the blind baseline was 0.35. Figure~\ref{fig:validation} shows the full profile. The result establishes that generation, parsing, field scoring, normalization, and aggregation distinguish exact, approximate, and weak responses. It does not establish content validity, human-model correspondence, or deployed-model competence.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{validation_profiles.pdf}
+\caption{Diagnostic pipeline validation. The left panel shows overall separation of the oracle, noisy, and blind baselines; the right panel shows separation by task family. Because these are constructed local baselines, the graph validates benchmark mechanics only.}
+\label{fig:validation}
+\end{figure}
+
+\subsection{When real-model results are necessary}
+
+A benchmark-construction article can make a useful methodological contribution without reporting a model ranking, provided that its claims are limited to design, implementation, and pipeline validation. Real-model responses become necessary when the intended claim concerns model competence, differences among systems, robustness of a particular model, or suitability for an applied workflow. Treating diagnostic baselines as if they were model data would invalidate those claims. Conversely, calling several models before the construct, administration, and scoring rules are frozen can turn design choices into post hoc explanations of an attractive result.
+
+The present release therefore distinguishes three evidence layers. Mathematical checks verify the curve generators and stored ground truth. Oracle, noisy, and blind baselines verify expected behavior of parsing, scoring, and aggregation. Actual vision-capable models provide empirical observations only when administered through the frozen task contract. This layered approach makes clear which conclusion each source of evidence can and cannot support.
+
+\subsection{Administering the benchmark through model APIs}
+
+Figure~\ref{fig:real-model} shows the administration path. Each task record supplies an image, prompt, task identifier, output expectation, and scoring rule. A provider adapter sends the same model-visible content to each target system. The resulting evidence record stores the requested model identifier, the identifier returned by the provider, access time, image-detail setting, output limit, sampling settings, repetition number, latency, token usage, raw output, and any API or parsing error. The scorer then operates on these stored records rather than on a live chat transcript.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{real_model_administration.pdf}
+\caption{Reproducible administration of IRT-Viz-Eval to actual models. Consumer product labels such as ``ChatGPT'' are insufficient provenance; a study should record the API model identifier and returned version whenever available. Diagnostic baselines and real model calls answer different questions and should remain separate.}
+\label{fig:real-model}
+\end{figure}
+
+The repository includes a command-line adapter for OpenAI's multimodal Responses API and a provider-neutral response schema. Researchers supply model identifiers at runtime rather than hard-coding a supposedly current model. This permits comparison of several available models or pinned snapshots while preserving the exact requested and returned identifiers. The adapter supports a small task limit for a cost check, repeated administrations, image-detail control, resumable output, and error preservation. Other providers can be added behind the same task and response contracts. Manual administration through a consumer chat interface is unsuitable for the primary study because model routing, system instructions, media preprocessing, and versioning may be unavailable or change without an auditable record.
+
+\subsection{Recommended study design for vision-capable models}
+
+A substantive evaluation should preregister or freeze the following conditions before inference:
+
+\begin{enumerate}
+\item model provider, exact model identifier, access date, and interface;
+\item system and user prompts, examples, image resolution, tool access, and output schema;
+\item temperature, sampling seed if supported, maximum output length, retry policy, and number of repeated calls;
+\item benchmark version, item pool, form-assembly seed, exclusions, and contamination controls;
+\item parser version, invalid-output policy, deterministic thresholds, judge prompt and judge version if used;
+\item primary outcomes, disaggregations, uncertainty intervals, and comparison model.
+\end{enumerate}
+
+At least one prompt-invariance analysis should be included. For example, a study could compare concise and explanatory prompts, or rotate answer labels when multiple choice is used. Repeated calls permit estimation of within-model administration variability. Item bootstrap intervals support uncertainty over the sampled task pool. A mixed-effects model can estimate fixed effects of target model, curve family, task type, and style while allowing random intercepts for base mathematical stimulus. Because each base curve appears under six styles, the design supports within-stimulus contrasts of visual robustness.
+
+Primary outcomes should include normalized score, model-identification accuracy, mean absolute error for each numeric field, parse-failure rate, refusal rate, and consistency across repeated administrations. Style degradation should be reported as a contrast against a prespecified reference style, not inferred from overlapping descriptive bars. Costs and latency matter if the intended use involves operational selection.
+
+\section{Validity Threats in LLM Benchmarking}
+
+Figure~\ref{fig:threats} locates five threats along the path from stimulus to claim. The diagram is deliberately causal in spirit: an observed score can be altered by factors introduced before, during, or after model generation.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{threats_to_inference.pdf}
+\caption{Threats to benchmark inference. Contamination affects the relation between stimulus and capability; prompt sensitivity affects elicitation; stochasticity affects observed output; parser or judge bias affects scoring; overgeneralization affects the interpretation attached to the score.}
+\label{fig:threats}
+\end{figure}
+
+\subsection{Contamination and shortcut learning}
+
+Prior exposure can occur at the level of task instructions, raw text or images, labels, code, or public discussions \citep{sainz2023contamination}. Programmatic generation reduces exact-item exposure but does not prevent a model from learning the generating template. Designers should therefore vary parameters and rendering conditions, keep some generators or forms private where appropriate, record release dates, and avoid claims that require proving complete non-exposure.
+
+Shortcuts can arise even without contamination. A model may infer the answer from filenames, alt text, legend labels, repeated color mappings, or template regularities. Benchmark packaging should remove answer-bearing metadata from the model-visible input. Counterbalanced and adversarial variants can test whether a purported capability survives removal of the cue.
+
+\subsection{Prompt and interface sensitivity}
+
+The prompt determines what behavior is elicited. A model can fail because it lacks the target capability, misunderstands an instruction, cannot emit the requested format, or follows a conflicting system policy. These are different findings. Reporting multiple plausible prompts and invalid-output rates helps distinguish them. A benchmark intended to compare model products should also treat provider preprocessing and tool access as part of the product, while a benchmark intended to compare base capabilities may disable them.
+
+\subsection{Stochasticity and version drift}
+
+A single API response is one draw from a configured system. Repeated runs reveal whether model rankings are stable or depend on sampling. Hosted systems may change without a new public name. Access dates, model identifiers, raw outputs, and periodic anchor-item reruns are therefore essential. Historical scores should not be pooled across silent model versions as if they were measurements of one fixed object.
+
+\subsection{Scoring and judge error}
+
+Parsers can mark semantically correct outputs wrong, while permissive extraction can reward extraneous or contradictory text. LLM judges may exhibit task-specific disagreement with people and each other \citep{bavaresco2025judges}. Deterministic scoring should be preferred when ground truth is structured. When judgment is necessary, designers should publish the rubric, blind or randomize comparison order, estimate agreement with relevant human experts, retain individual judgments, and specify adjudication.
+
+\subsection{Overgeneralization and consequential validity}
+
+Benchmark results often travel farther than their design. A score on synthetic IRT plots does not establish competence with empirical calibration reports, psychometric decision making, or the consequences of wrong advice. Raji and colleagues' critique of ``general'' benchmarks is a reminder that dataset breadth is not a license for unbounded claims \citep{raji2021everything}. The defensible interpretation should name the sampled content, model configuration, score rule, date, and intended use. Any model-selection decision should add use-specific validation rather than rely on a broad leaderboard alone.
+
+\section{A Reusable Recipe for Social Science Benchmark Projects}
+
+For a social science team beginning an LLM evaluation, the following sequence is a practical minimum:
+
+\begin{enumerate}
+\item Write one paragraph naming the decision, users, model system, context, and claims that are out of scope.
+\item Create a construct map with narrow capabilities and observable behaviors; have subject-matter experts review it.
+\item Build a content matrix crossing capabilities with domains, task types, difficulty, and nuisance transformations.
+\item Choose an item source and ground-truth process; retain provenance and separate target-model generation from answer creation.
+\item Pilot prompts and response schemas on several model families; freeze administration rules before comparison.
+\item Define form assembly and analysis denominators, including invalid outputs and refusals.
+\item Implement scoring with unit tests, diagnostic baselines, and human validation for judgment-based components.
+\item Report disaggregated results and uncertainty; inspect errors before ranking models.
+\item Publish documentation, raw outputs where permitted, code, version identifiers, known limitations, and maintenance plans.
+\item Refresh, revalidate, or retire when exposure, saturation, model drift, or new intended uses undermine the original argument.
+\end{enumerate}
+
+This recipe is intentionally closer to assessment design than to downloading a test set and calculating accuracy. It also remains different from human psychometrics: a team need not fit an IRT model to every benchmark or treat models as people. The transferable insight is evidentiary discipline. Define the claim, design observations that bear on it, standardize the elicitation, quantify uncertainty, and constrain the interpretation.
+
+\section{Discussion}
+
+LLM benchmarking and social science measurement have much to offer one another. Benchmark developers contribute practices for executable evaluation, large-scale automation, adversarial testing, and rapid iteration. Social scientists contribute theories of constructs, response processes, validity arguments, fairness, sampling, and consequences. ECBD demonstrates that this exchange is already possible \citep{liu2024ecbd}. BetterBench's lifecycle analysis similarly shows that benchmark quality depends on design, implementation, documentation, maintenance, and eventual retirement rather than predictive performance alone \citep{reuel2024betterbench}.
+
+IRT-Viz-Eval illustrates the benefits of this combined perspective. Programmatic generation provides exact answers; factorial rendering supports controlled invariance evidence; structured records preserve provenance; field-level scoring supports error analysis; and diagnostic baselines test mechanics. At the same time, the validity argument remains bounded. The current benchmark samples synthetic plots, the local run contains no real VLM results, the rationale score needs human validation, and the six style profiles do not represent the full ecology of psychometric graphics.
+
+The next empirical phase should evaluate several versioned vision-capable models under repeated and counterbalanced administrations, with expert review of a stratified response sample. Extensions should include empirical estimation noise, confidence bands, differential item functioning plots, item-fit diagnostics, score-report visualizations, accessibility conditions, and full unfolding-model generators. An external validation study could test whether benchmark performance predicts quality on authentic psychometric review tasks.
+
+\section{Conclusion}
+
+An LLM benchmark is best understood as a maintained measurement system. Its data are only one component. The prompts define elicitation, the model configuration defines the object, the parser or judge defines the observation, the assembly rule defines the sampled domain, and the validity argument defines what the score can mean. These features distinguish benchmarking from conventional educational and psychological assessment while preserving a shared commitment to evidence-based interpretation.
+
+For social scientists, the practical lesson is straightforward: do not begin with a leaderboard. Begin with an intended use and a defensible capability claim. Build backward to the evidence and tasks, then move forward through standardized administration, scoring, validation, reporting, and maintenance. IRT-Viz-Eval provides one complete implementation of that process and a foundation for studying whether multimodal AI systems can interpret the visual language of psychometrics.
+
+\clearpage
+\appendix
+
+\section{Benchmark Construction Checklist}
+
+\begin{longtable}{p{0.18\linewidth}p{0.76\linewidth}}
+\caption{Questions to answer before releasing or using an LLM benchmark.}\label{tab:checklist}\\
+\toprule
+Stage & Required questions \\
+\midrule
+\endfirsthead
+\toprule
+Stage & Required questions \\
+\midrule
+\endhead
+Intended use & Who will use the result? What decision will it inform? What interpretations and uses are explicitly unsupported? \\
+Object & What exact model, version, interface, tools, retrieval sources, and provider settings are being evaluated? Can these change during the study? \\
+Capability & What narrow behavior is claimed? Which alternative processes could produce the same observed answer? \\
+Content & What domains, task types, difficulty levels, languages, groups, and modalities are sampled? Which cells are absent? \\
+Ground truth & Who or what creates the reference answer? Is it independently checked? How are ambiguity and disagreement represented? \\
+Adaptation & What system prompt, user prompt, examples, image transformations, output schema, decoding settings, and retries are used? \\
+Assembly & How are tasks selected and weighted? Are forms identical across models? What seed and exclusion rules are used? \\
+Scoring & How are raw outputs parsed? How are refusals, multiple answers, malformed outputs, and missing fields scored? \\
+Judgment & If people or LLMs judge outputs, what rubric, training, blinding, agreement, adjudication, and judge provenance are used? \\
+Uncertainty & What varies across items, repeated calls, prompts, forms, models, and judges? Which interval or model represents that variation? \\
+Robustness & Which meaning-preserving changes should leave scores stable? Which difficulty manipulations should change scores predictably? \\
+Contamination & Could items, answers, templates, or code have entered training data? What evidence and mitigation are available? \\
+Documentation & Are data provenance, licenses, model versions, prompts, raw outputs, code, exclusions, costs, and limitations documented? \\
+Maintenance & Who owns updates? How will exposure, drift, and saturation be monitored? What triggers a new version or retirement? \\
+\bottomrule
+\end{longtable}
+
+\section{IRT-Viz-Eval Task Families}
+
+\begin{table}[H]
+\centering
+\caption{Current task families and primary evidence fields.}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{0.25\linewidth}Y>{\raggedright\arraybackslash}p{0.24\linewidth}}
+\toprule
+Task family & Observable response & Primary scoring \\
+\midrule
+Model identification & IRT model or curve family plus visual rationale & Exact categorical match + rationale \\
+Parameter estimation & $a$, $b$, $c$, $d$ where applicable & Numeric tolerance bands \\
+Probability reading & $P(\theta)$ at a specified location & Numeric tolerance bands \\
+Information peak & Peak location and height & Numeric tolerance bands \\
+Category reasoning & Category count, modal category, expected score & Integer, categorical, and numeric fields \\
+Test characteristic & Form length and expected raw score & Integer and numeric fields \\
+Non-monotonic peak & Non-monotonicity, peak location, peak probability & Categorical and numeric fields \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Linked Data Schema}
+
+Each line is a JSON object with a stable identifier. The joins are:
+
+\begin{center}
+\texttt{stimulus\_id} $\rightarrow$ \texttt{task\_id} $\rightarrow$ \texttt{response\_id} $\rightarrow$ \texttt{judgment\_id}.
+\end{center}
+
+\begin{table}[H]
+\centering
+\caption{Minimum fields retained in each benchmark artifact.}
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}Y}
+\toprule
+Artifact & Core fields \\
+\midrule
+Stimulus & Base and rendered identifiers; model family; mathematical parameters; ground truth; coordinate path; image path; style, axes, palette, legend, size, and render engine \\
+Task & Task type; prompt; prompt-template identifier; expected answer fields; field types; numeric thresholds; rubric; image link \\
+Response & Target model and version; system and user prompts; decoding settings; seed; access time; latency; raw output; parsed output; parser version \\
+Judgment & Response link; field-level errors and scores; rationale score; total and maximum score; normalized score; judge type, version, prompt, and timestamp \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Reporting Template for an Empirical Model Study}
+
+An empirical paper using this benchmark should report:
+
+\begin{enumerate}
+\item benchmark release, generator version, date generated, item count, task count, and form seed;
+\item every target model's provider, identifier, access date, modality support, context limit, and tool configuration;
+\item full system and user prompts, examples, response schema, image preprocessing, decoding, retries, and repetitions;
+\item primary and secondary outcomes, aggregation weights, invalid-output policy, uncertainty procedure, and multiplicity handling;
+\item deterministic scorer version and, if applicable, judge model, prompt, order randomization, human validation sample, and agreement;
+\item overall and disaggregated results by task, curve family, style, and base stimulus, including denominators and confidence intervals;
+\item parse failures, refusals, latency, token use, cost, exclusions, and missing data;
+\item contamination considerations, benchmark limitations, intended interpretation, unsupported uses, and a link to raw outputs where licensing permits.
+\end{enumerate}
+
+\section{Reproducibility Resources}
+
+The repository includes a one-command local pipeline, source modules for psychometric generation and rendering, JSON schemas, target and judge prompts, generated stimuli and task records, diagnostic responses and judgments, analysis tables, and the script that generated every figure in this article. The local command is:
+
+\begin{verbatim}
+bash scripts/run_local_benchmark.sh
+\end{verbatim}
+
+After installing the optional API dependency and setting an API key locally, a small real-model pilot can be administered with:
+
+\begin{verbatim}
+PYTHONPATH=src python3 -m irt_viz_eval.cli run-openai \
+  --models MODEL_ID_1,MODEL_ID_2 --limit 10
+\end{verbatim}
+
+The command writes a separate response file and never replaces the diagnostic baselines. Model identifiers are supplied by the researcher because provider availability changes over time. API keys, unpublished response files, and submission correspondence are excluded from version control.
+
+The paper figures can be regenerated with:
+
+\begin{verbatim}
+python3 paper/generate_figures.py
+\end{verbatim}
+
+Downloaded source articles used during manuscript development are not redistributed. Persistent publisher and repository locations are supplied in the reference list where available.
+
+\section{Declarations}
+
+\noindent\textbf{Data and code availability.} An anonymized archive containing the benchmark generator, task records, schemas, prompts, scoring code, diagnostic outputs, tests, and figure-generation scripts accompanies the review submission. The public repository URL will be inserted after double-blind review.
+
+\noindent\textbf{Funding.} Funding information is provided separately and withheld from the main document for double-blind review.
+
+\noindent\textbf{Competing interests.} Competing-interest information is provided separately and withheld from the main document for double-blind review.
+
+\noindent\textbf{Generative AI disclosure.} Generative AI tools assisted with drafting, code development, literature discovery, editing, and figure development. The author reviewed the underlying sources, tested the code, verified the manuscript and references, and accepts responsibility for the final work.
+
+\bibliographystyle{apalike}
+\bibliography{references}
+
+\end{document}

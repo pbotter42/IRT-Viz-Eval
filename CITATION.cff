@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use IRT-Viz-Eval, please cite this repository and the accompanying manuscript."
+title: "IRT-Viz-Eval: A Benchmark for Visual Interpretation of Psychometric Figures"
+type: software
+authors:
+  - family-names: Botter
+    given-names: Preston
+version: 0.1.0
+date-released: 2026-07-11
+repository-code: "https://github.com/pbotter42/IRT-Viz-Eval"
+license: MIT
+keywords:
+  - item response theory
+  - large language models
+  - multimodal evaluation
+  - benchmark design

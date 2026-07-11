@@ -1,0 +1,34 @@
+.DS_Store
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+tmp/
+
+# Local source material and submission exports are not redistributed.
+idea.pdf
+paper/literature/
+Submit Submission*.pdf
+
+# LaTeX intermediates and duplicate build output.
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/manuscript.pdf
+
+# Paid API runs remain local until reviewed for release.
+data/benchmark/openai_responses*.jsonl
+data/benchmark/openai_judgments*.jsonl
+output/openai_analysis/
+output/submission/

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IRT Visual Benchmark Target Response",
+  "type": "object",
+  "required": [
+    "response_id",
+    "task_id",
+    "stimulus_id",
+    "target_model_name",
+    "prompt_template_id",
+    "target_raw_output"
+  ],
+  "properties": {
+    "response_id": {"type": "string"},
+    "task_id": {"type": "string"},
+    "stimulus_id": {"type": "string"},
+    "target_model_name": {"type": "string"},
+    "target_model_family": {"type": "string"},
+    "provider": {"type": "string"},
+    "requested_model": {"type": "string"},
+    "returned_model": {"type": "string"},
+    "api_response_id": {"type": "string"},
+    "prompt_template_id": {"type": "string"},
+    "temperature": {"type": ["number", "null"]},
+    "top_p": {"type": "number"},
+    "image_detail": {"enum": ["low", "high", "original", "auto"]},
+    "max_output_tokens": {"type": "integer", "minimum": 1},
+    "repetition": {"type": "integer", "minimum": 1},
+    "started_at_utc": {"type": "string", "format": "date-time"},
+    "inference_latency_ms": {"type": "integer"},
+    "usage": {"type": ["object", "null"]},
+    "status": {"enum": ["completed", "error"]},
+    "error_type": {"type": "string"},
+    "error_message": {"type": "string"},
+    "target_raw_output": {"type": "string"}
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "benchmark_id": "irt_viz_eval_seed_20260711",
+  "counts": {
+    "base_stimuli": 14,
+    "rendered_stimuli": 84,
+    "tasks": 198
+  },
+  "files": {
+    "stimuli": "data/benchmark/stimuli.jsonl",
+    "tasks": "data/benchmark/tasks.jsonl"
+  },
+  "n_per_model": 1,
+  "seed": 20260711,
+  "style_profiles": [
+    {
+      "color_palette": "tab10",
+      "gridlines": "standard",
+      "legend_position": "best",
+      "line_width": 2.4,
+      "render_engine": "matplotlib",
+      "style_context": "default",
+      "style_profile_id": "matplotlib_light",
+      "theme": "light",
+      "tick_density": "standard"
+    },
+    {
+      "color_palette": "deep",
+      "gridlines": "standard",
+      "legend_position": "right",
+      "line_width": 2.4,
+      "render_engine": "seaborn",
+      "style_context": "whitegrid",
+      "style_profile_id": "seaborn_whitegrid",
+      "theme": "light",
+      "tick_density": "standard"
+    },
+    {
+      "color_palette": "muted",
+      "gridlines": "heavy",
+      "legend_position": "best",
+      "line_width": 2.2,
+      "render_engine": "matplotlib_ggplot_style",
+      "style_context": "ggplot",
+      "style_profile_id": "ggplot_gray",
+      "theme": "light",
+      "tick_density": "dense"
+    },
+    {
+      "color_palette": "grayscale",
+      "gridlines": "none",
+      "legend_position": "bottom",
+      "line_width": 2.6,
+      "render_engine": "matplotlib",
+      "style_context": "default",
+      "style_profile_id": "grayscale_no_grid",
+      "theme": "light",
+      "tick_density": "sparse"
+    },
+    {
+      "color_palette": "bright",
+      "gridlines": "faint",
+      "legend_position": "best",
+      "line_width": 2.6,
+      "render_engine": "matplotlib",
+      "style_context": "dark_background",
+      "style_profile_id": "dark_high_contrast",
+      "theme": "dark",
+      "tick_density": "standard"
+    },
+    {
+      "color_palette": "colorblind",
+      "gridlines": "faint",
+      "legend_position": "outside",
+      "line_width": 2.0,
+      "render_engine": "matplotlib_lattice_emulation",
+      "style_context": "classic",
+      "style_profile_id": "lattice_emulation",
+      "theme": "light",
+      "tick_density": "standard"
+    }
+  ],
+  "theta_grid": {
+    "max": 4.0,
+    "min": -4.0,
+    "step": 0.05
+  },
+  "version": "0.1.0"
+}

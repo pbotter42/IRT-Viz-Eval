@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IRT Visual Benchmark Stimulus",
+  "type": "object",
+  "required": [
+    "stimulus_id",
+    "base_stimulus_id",
+    "assessment_level",
+    "curve_family",
+    "irt_family",
+    "irt_model",
+    "monotonicity",
+    "parameters",
+    "ground_truth",
+    "coordinates_path",
+    "visual"
+  ],
+  "properties": {
+    "stimulus_id": {"type": "string"},
+    "base_stimulus_id": {"type": "string"},
+    "assessment_level": {"enum": ["item", "test"]},
+    "curve_family": {
+      "enum": [
+        "dichotomous_icc",
+        "item_information",
+        "test_information",
+        "test_characteristic",
+        "polytomous_crc",
+        "unfolding"
+      ]
+    },
+    "irt_family": {"type": "string"},
+    "irt_model": {"type": "string"},
+    "monotonicity": {"enum": ["monotonic", "non_monotonic"]},
+    "parameters": {"type": "object"},
+    "ground_truth": {"type": "object"},
+    "constituent_item_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "coordinates_path": {"type": "string"},
+    "visual": {
+      "type": "object",
+      "required": [
+        "style_profile_id",
+        "render_engine",
+        "theme",
+        "color_palette",
+        "gridlines",
+        "image_path",
+        "num_rendered_lines"
+      ],
+      "properties": {
+        "style_profile_id": {"type": "string"},
+        "render_engine": {"type": "string"},
+        "theme": {"type": "string"},
+        "color_palette": {"type": "string"},
+        "gridlines": {"type": "string"},
+        "legend_position": {"type": "string"},
+        "tick_density": {"type": "string"},
+        "image_path": {"type": "string"},
+        "image_format": {"type": "string"},
+        "num_rendered_lines": {"type": "integer"},
+        "x_axis": {"type": "object"},
+        "y_axis": {"type": "object"}
+      }
+    }
+  }
+}

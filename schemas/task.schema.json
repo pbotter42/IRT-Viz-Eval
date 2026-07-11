@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IRT Visual Benchmark Task",
+  "type": "object",
+  "required": [
+    "task_id",
+    "stimulus_id",
+    "task_type",
+    "image_path",
+    "prompt_template_id",
+    "prompt",
+    "expected_answers",
+    "rubric"
+  ],
+  "properties": {
+    "task_id": {"type": "string"},
+    "stimulus_id": {"type": "string"},
+    "base_stimulus_id": {"type": "string"},
+    "task_type": {"type": "string"},
+    "assessment_level": {"type": "string"},
+    "curve_family": {"type": "string"},
+    "irt_model": {"type": "string"},
+    "style_profile_id": {"type": "string"},
+    "image_path": {"type": "string"},
+    "prompt_template_id": {"type": "string"},
+    "prompt": {"type": "string"},
+    "expected_answers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "value"],
+        "properties": {
+          "type": {"enum": ["numeric", "integer", "categorical"]},
+          "value": {},
+          "thresholds": {
+            "type": "array",
+            "items": {"type": "number"}
+          }
+        }
+      }
+    },
+    "rubric": {"type": "object"}
+  }
+}

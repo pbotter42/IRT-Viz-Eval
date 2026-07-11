@@ -1,0 +1,9 @@
+# Analysis Summary
+
+This summary was generated from the current benchmark judgments.
+
+| target_model_name     | n   | mean_normalized_score | mean_total_score  | mean_max_possible_score |
+| --------------------- | --- | --------------------- | ----------------- | ----------------------- |
+| local_blind_baseline  | 198 | 0.3480065656565656    | 2.272727272727273 | 6.242424242424242       |
+| local_noisy_baseline  | 198 | 0.7290126262626263    | 4.752525252525253 | 6.242424242424242       |
+| local_oracle_baseline | 198 | 1.0                   | 6.242424242424242 | 6.242424242424242       |
