@@ -24,10 +24,11 @@
 \setlist{nosep,leftmargin=*}
 \captionsetup{font=small,labelfont=bf}
 \newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Z}{>{\centering\arraybackslash}X}
 \doublespacing
 
 \title{How Large Language Model Benchmarks Are Built:\\
-A Measurement-Oriented Tutorial with IRT-Viz-Eval}
+A Measurement-Oriented Tutorial and Empirical Demonstration with IRT-Viz-Eval}
 \author{}
 \date{}
 
@@ -35,7 +36,7 @@ A Measurement-Oriented Tutorial with IRT-Viz-Eval}
 \maketitle
 
 \begin{abstract}
-Large language models are compared with benchmark scores, but building an LLM benchmark is not equivalent to constructing an educational or psychological assessment. This tutorial introduces benchmark development to an applied measurement audience through eight stages: defining intended use and the evaluated system, specifying capabilities and evidence, creating tasks and ground truth, standardizing prompting, assembling forms, scoring, validating, and maintaining the benchmark. IRT-Viz-Eval, a benchmark of vision-capable models' interpretation of item response theory graphics, illustrates each stage. Its generators produce 84 rendered stimuli and 198 tasks across six visual styles; diagnostic baselines test pipeline mechanics without being presented as model results. An executable protocol shows how researchers can administer it to versioned models, preserve provenance, quantify uncertainty, and bound claims.
+Benchmark scores are widely used to compare large language models, but constructing an LLM benchmark differs from developing an educational or psychological assessment. This tutorial introduces benchmark development to measurement researchers through eight stages, from intended use and evidence specification to validation and maintenance. IRT-Viz-Eval provides a worked example with 84 psychometric figures and 198 tasks. Two vision-language models were administered through Hugging Face Inference Providers and scored against programmatically generated ground truth. Their mean task-normalized scores were nearly identical (.628 and .629), although task profiles, missing outputs, latency, and raw-point aggregation differed substantially. The demonstration shows why benchmark interpretation requires more than a leaderboard total.
 \end{abstract}
 
 \noindent\textbf{Keywords:} large language models, benchmark design, validity, educational measurement, item response theory
@@ -50,7 +51,7 @@ Here, a \emph{benchmark} is a standardized procedure for eliciting observable be
 
 IRT-Viz-Eval is used as a running case. It asks whether multimodal LLMs can interpret psychometric plots such as item characteristic curves, item and test information functions, test characteristic curves, category response curves, and non-monotonic ideal-point curves. The case is useful because the underlying mathematics provides exact ground truth, while the visual presentation can be manipulated independently. The benchmark itself remains substantively important, but its primary role in this article is to make the benchmark-construction process concrete.
 
-The article is therefore a methodological tutorial and illustrative review, not a leaderboard study. Diagnostic baselines establish that the software behaves as designed. They are deliberately separated from claims about the competence of actual models. This distinction matters for benchmark developers: real-model administrations are necessary before comparing systems or estimating model performance, but they are not a substitute for construct definition, content review, scoring validation, or a defensible interpretation. The worked example includes an executable administration protocol so that the empirical phase can be conducted transparently when a research question requires it.
+The article is therefore a methodological tutorial with an empirical demonstration, not an attempt to establish a broad model leaderboard. Diagnostic baselines establish that the software behaves as designed; two real model administrations then show how benchmark evidence changes once provider routing, malformed or empty outputs, latency, token limits, and aggregation rules enter the study. The distinction matters: real-model results are necessary for claims about actual systems, but they do not substitute for construct definition, content review, scoring validation, or a defensible interpretation.
 
 \section{A Benchmark Is Test-Like, but It Is Not a Human Assessment}
 
@@ -254,7 +255,7 @@ The repository writes four linked JSONL files. A stimulus record contains the ba
 
 \subsection{Scoring design}
 
-Categorical and integer fields receive exact-match credit after conservative normalization. Numeric fields use task-specific absolute-error bands. In the common parameter example, errors within 0.15, 0.30, and 0.50 receive 3, 2, and 1 points; larger errors receive 0. Probability-reading tasks use tighter bands of 0.05, 0.10, and 0.20. A rationale can add up to two points for relevant visual evidence. Scores are normalized by the maximum available points for that task because task families request different numbers of fields.
+Categorical and integer fields receive exact-match credit after conservative normalization. Numeric fields use task-specific absolute-error bands. In the common parameter example, errors within 0.15, 0.30, and 0.50 receive 3, 2, and 1 points; larger errors receive 0. Probability-reading tasks use tighter bands of 0.05, 0.10, and 0.20. A deterministic rationale rule adds zero to two points based on the presence of prespecified psychometric terms and minimum explanatory content. This component is a reproducible proxy for visible rationale evidence, not a semantic judgment of whether every explanation is correct. Scores are normalized by the maximum available points for that task because task families request different numbers of fields.
 
 \begin{figure}[!htbp]
 \centering
@@ -263,7 +264,7 @@ Categorical and integer fields receive exact-match credit after conservative nor
 \label{fig:scoring}
 \end{figure}
 
-Figure~\ref{fig:scoring} emphasizes two choices. First, visual reading is approximate, so a graded numeric rubric is more informative than exact string equality. Second, the normalized total is not the only result. Field errors, rationale quality, format compliance, and task type remain available for diagnosis. A future validation study should ask experts to score a stratified sample and estimate agreement with both the deterministic rubric and any LLM judge.
+Figure~\ref{fig:scoring} emphasizes two choices. First, visual reading is approximate, so a graded numeric rubric is more informative than exact string equality. Second, the normalized total is not the only result. Field errors, rationale indicators, format compliance, and task type remain available for diagnosis. A future validation study should ask experts to score a stratified response sample and estimate agreement with the deterministic rubric before replacing or supplementing it with human or LLM judgment.
 
 \section{From Benchmark Prototype to Actual Model Administration}
 
@@ -280,15 +281,28 @@ The expected ordering appeared overall and within every task family. The oracle 
 \label{fig:validation}
 \end{figure}
 
-\subsection{When real-model results are necessary}
+\subsection{Choosing an API route}
 
-A benchmark-construction article can make a useful methodological contribution without reporting a model ranking, provided that its claims are limited to design, implementation, and pipeline validation. Real-model responses become necessary when the intended claim concerns model competence, differences among systems, robustness of a particular model, or suitability for an applied workflow. Treating diagnostic baselines as if they were model data would invalidate those claims. Conversely, calling several models before the construct, administration, and scoring rules are frozen can turn design choices into post hoc explanations of an attractive result.
+Real-model responses are necessary when a claim concerns an actual system rather than benchmark mechanics. The route used to obtain those responses is part of the administration condition. Table~\ref{tab:api-options} summarizes common options. Direct vendor APIs provide model-native controls; routing services expose models from several developers through one interface; dedicated endpoints provide a controlled hosted deployment; and local inference offers the greatest implementation control when hardware and open weights are available. OpenAI's Responses API and Google's Gemini API both accept image inputs, while Hugging Face Inference Providers routes requests to supported third-party models and compute providers through a common client \citep{openai2026vision,google2026vision,huggingface2026providers}.
 
-The present release therefore distinguishes three evidence layers. Mathematical checks verify the curve generators and stored ground truth. Oracle, noisy, and blind baselines verify expected behavior of parsing, scoring, and aggregation. Actual vision-capable models provide empirical observations only when administered through the frozen task contract. This layered approach makes clear which conclusion each source of evidence can and cannot support.
+\begin{table}[!htbp]
+\centering
+\small
+\caption{API and deployment options for administering a multimodal benchmark.}
+\label{tab:api-options}
+\begin{tabularx}{\linewidth}{p{0.17\linewidth}p{0.22\linewidth}YY}
+\toprule
+Route & Examples & Primary advantage & Measurement concern \\
+\midrule
+Direct vendor API & OpenAI Responses; Google Gemini & Native model controls and provider metadata & Separate credentials, billing, schemas, and version policies \\
+Model router or hub & Hugging Face Inference Providers & One task adapter can reach several model families & Routing and underlying compute provider must be recorded \\
+Dedicated endpoint & Managed cloud or Hugging Face endpoint & Stable deployment and configurable resources & Setup cost and endpoint configuration become part of the system \\
+Local inference & Transformers, vLLM, or similar runtime & Control over weights, decoding, and logs & Hardware, quantization, runtime, and preprocessing affect comparability \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-\subsection{Administering the benchmark through model APIs}
-
-Figure~\ref{fig:real-model} shows the administration path. Each task record supplies an image, prompt, task identifier, output expectation, and scoring rule. A provider adapter sends the same model-visible content to each target system. The resulting evidence record stores the requested model identifier, the identifier returned by the provider, access time, image-detail setting, output limit, sampling settings, repetition number, latency, token usage, raw output, and any API or parsing error. The scorer then operates on these stored records rather than on a live chat transcript.
+Figure~\ref{fig:real-model} shows the common administration path. Each task record supplies an image, prompt, task identifier, output expectation, and scoring rule. A provider adapter sends the same model-visible content to each target system. The resulting evidence record stores the requested and returned model identifiers, access time, output limit, repetition number, latency, token usage, raw output, and any API or parsing error. The scorer operates on these stored records rather than on a live chat transcript.
 
 \begin{figure}[!htbp]
 \centering
@@ -297,24 +311,92 @@ Figure~\ref{fig:real-model} shows the administration path. Each task record supp
 \label{fig:real-model}
 \end{figure}
 
-The repository includes a command-line adapter for OpenAI's multimodal Responses API and a provider-neutral response schema. Researchers supply model identifiers at runtime rather than hard-coding a supposedly current model. This permits comparison of several available models or pinned snapshots while preserving the exact requested and returned identifiers. The adapter supports a small task limit for a cost check, repeated administrations, image-detail control, resumable output, and error preservation. Other providers can be added behind the same task and response contracts. Manual administration through a consumer chat interface is unsuitable for the primary study because model routing, system instructions, media preprocessing, and versioning may be unavailable or change without an auditable record.
+The repository implements both an OpenAI multimodal Responses API adapter and the Hugging Face adapter used in this study. The latter used Hugging Face authentication and routing but explicitly selected the underlying inference provider in each model identifier. This is an important distinction: Hugging Face supplied the common interface, model discovery, authentication, and request routing; Novita served GLM-4.5V and DeepInfra served Gemma 3 4B. A consumer subscription to ChatGPT or Gemini is not an API administration record and does not by itself supply API credits. Manual consumer-chat administration was avoided because routing, hidden instructions, media preprocessing, and versioning are difficult to audit.
 
-\subsection{Recommended study design for vision-capable models}
+\subsection{Empirical administration protocol}
 
-A substantive evaluation should preregister or freeze the following conditions before inference:
+The benchmark was administered on July 11--12, 2026. The two target systems were requested as \texttt{zai-org/GLM-4.5V:novita} and \texttt{google/gemma-3-4b-it:deepinfra}; the router returned \texttt{zai-org/glm-4.5v} and \texttt{google/gemma-3-4b-it}, respectively. Both received all 198 zero-shot tasks, the same PNG images and prompts, no tools, and a maximum of 1,200 completion tokens. Each prompt requested task-specific JSON plus a brief visual rationale. Unspecified decoding parameters used provider defaults. Calls used a 90-second timeout, one retry for transient network failures, resumable JSONL output, and one administration per task. Table~\ref{tab:protocol} records the core conditions.
 
-\begin{enumerate}
-\item model provider, exact model identifier, access date, and interface;
-\item system and user prompts, examples, image resolution, tool access, and output schema;
-\item temperature, sampling seed if supported, maximum output length, retry policy, and number of repeated calls;
-\item benchmark version, item pool, form-assembly seed, exclusions, and contamination controls;
-\item parser version, invalid-output policy, deterministic thresholds, judge prompt and judge version if used;
-\item primary outcomes, disaggregations, uncertainty intervals, and comparison model.
-\end{enumerate}
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Frozen conditions for the two Hugging Face-routed administrations.}
+\label{tab:protocol}
+\begin{tabularx}{\linewidth}{p{0.21\linewidth}YY}
+\toprule
+Condition & GLM-4.5V & Gemma 3 4B \\
+\midrule
+Requested identifier & \nolinkurl{zai-org/GLM-4.5V:novita} & \nolinkurl{google/gemma-3-4b-it:deepinfra} \\
+Returned identifier & \nolinkurl{zai-org/glm-4.5v} & \nolinkurl{google/gemma-3-4b-it} \\
+Router / compute provider & Hugging Face / Novita & Hugging Face / DeepInfra \\
+Tasks and repetitions & 198 tasks; one response per task & 198 tasks; one response per task \\
+Input and elicitation & Native benchmark PNG; zero-shot task prompt; JSON requested; no tools & Same \\
+Output and network policy & 1,200 tokens; 90-second timeout; one transient retry & Same \\
+Scoring & Deterministic field rubric plus rule-based rationale component; empty or unparseable fields receive zero & Same \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
-At least one prompt-invariance analysis should be included. For example, a study could compare concise and explanatory prompts, or rotate answer labels when multiple choice is used. Repeated calls permit estimation of within-model administration variability. Item bootstrap intervals support uncertainty over the sampled task pool. A mixed-effects model can estimate fixed effects of target model, curve family, task type, and style while allowing random intercepts for base mathematical stimulus. Because each base curve appears under six styles, the design supports within-stimulus contrasts of visual robustness.
+No LLM was used as a judge. Categorical fields were scored by normalized exact match, numeric fields by prespecified tolerance bands, and rationale evidence by the fixed rule described earlier. The primary model score was the unweighted mean of the 198 task-normalized scores. To represent uncertainty over sampled mathematical content, 95\% intervals were calculated from 10,000 cluster-bootstrap draws over the 14 base stimuli. The paired interval for the model difference resampled the same base-stimulus clusters. These intervals do not represent within-model sampling variability because only one response per task was collected.
 
-Primary outcomes should include normalized score, model-identification accuracy, mean absolute error for each numeric field, parse-failure rate, refusal rate, and consistency across repeated administrations. Style degradation should be reported as a contrast against a prespecified reference style, not inferred from overlapping descriptive bars. Costs and latency matter if the intended use involves operational selection.
+\subsection{Two-model results}
+
+Both models completed 198 API calls without a recorded API error after deduplication. Their primary scores were almost identical: .628 for GLM-4.5V (95\% cluster-bootstrap CI [.536, .727]) and .629 for Gemma 3 4B (95\% CI [.587, .673]). The paired difference, GLM minus Gemma, was -.001 (95\% CI [-.078, .076]). The design therefore does not support an overall ordering of these systems. Table~\ref{tab:overall-results} also shows a consequential aggregation choice. Gemma received more raw rubric points, 742 of 1,236, than GLM, 668 of 1,236, although their mean task-normalized scores were nearly equal. Raw-point aggregation gives more weight to tasks with more requested fields; task normalization gives every task equal weight.
+
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Overall scores and administration diagnostics for the complete 198-task runs.}
+\label{tab:overall-results}
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}ZZZZZ}
+\toprule
+Model & Mean normalized & 95\% CI & Raw points & Empty output & Median latency \\
+\midrule
+GLM-4.5V & .628 & [.536, .727] & 668/1,236 & 16.7\% & 13.79 s \\
+Gemma 3 4B & .629 & [.587, .673] & 742/1,236 & 0.0\% & 2.14 s \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Operationally, the two runs were not equivalent. GLM produced visible text for 165 tasks and parseable JSON for 152; Gemma produced nonempty, parseable JSON for all 198. GLM's median latency was 13.79 seconds (interquartile range 8.42--21.93), compared with 2.14 seconds (1.75--2.53) for Gemma. Provider-reported total token counts were 342,107 and 85,531, respectively. These values describe the routed systems under this protocol, not immutable properties of the model weights: providers can differ in image tokenization, reasoning-token accounting, serving hardware, and defaults.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{empirical_model_results.pdf}
+\caption{Complete two-model results. Overall bars show mean task-normalized scores with 95\% cluster-bootstrap intervals over base mathematical stimuli. Task-level bars reveal different capability profiles despite nearly identical overall means.}
+\label{fig:empirical-results}
+\end{figure}
+
+The overall tie concealed substantial profile differences (Table~\ref{tab:task-results}; Figure~\ref{fig:empirical-results}). GLM was stronger on information-peak localization (.946 vs. .721), probability reading (.873 vs. .567), non-monotonic peaks (.889 vs. .722), and test expected scores (.833 vs. .361). Gemma was stronger on parameter estimation (.533 vs. .147), category-curve reasoning (.444 vs. .125), and model identification (.698 vs. .639). These are descriptive comparisons from one administration; they identify hypotheses for repeated evaluation rather than stable model traits.
+
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Mean normalized score by task type.}
+\label{tab:task-results}
+\begin{tabularx}{\linewidth}{Yccc}
+\toprule
+Task type & $n$ & GLM-4.5V & Gemma 3 4B \\
+\midrule
+Model identification & 84 & .639 & .698 \\
+Parameter estimation & 24 & .147 & .533 \\
+Probability at $\theta=0$ & 30 & .873 & .567 \\
+Information peak & 30 & .946 & .721 \\
+Category-curve reasoning & 18 & .125 & .444 \\
+Test expected score & 6 & .833 & .361 \\
+Non-monotonic peak & 6 & .889 & .722 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Figure~\ref{fig:empirical-robustness} disaggregates by rendering profile and curve family. Style scores varied within a comparatively narrow range for each model: .599--.663 for GLM and .608--.666 for Gemma. This descriptive consistency is encouraging evidence that no single plotting theme determined the overall result, but six synthetic styles are not a sample of all operational graphics. Curve-family profiles differed more sharply. GLM performed best on item-information and unfolding tasks, whereas Gemma's advantage was concentrated in dichotomous and polytomous tasks.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{empirical_robustness_profiles.pdf}
+\caption{Mean task-normalized scores by rendering profile and curve family. Similar style ranges coexist with larger content-profile differences, illustrating why both nuisance-condition and substantive-domain disaggregation are needed.}
+\label{fig:empirical-robustness}
+\end{figure}
 
 \section{Validity Threats in LLM Benchmarking}
 
@@ -372,15 +454,17 @@ This recipe is intentionally closer to assessment design than to downloading a t
 
 LLM benchmarking and social science measurement have much to offer one another. Benchmark developers contribute practices for executable evaluation, large-scale automation, adversarial testing, and rapid iteration. Social scientists contribute theories of constructs, response processes, validity arguments, fairness, sampling, and consequences. ECBD demonstrates that this exchange is already possible \citep{liu2024ecbd}. BetterBench's lifecycle analysis similarly shows that benchmark quality depends on design, implementation, documentation, maintenance, and eventual retirement rather than predictive performance alone \citep{reuel2024betterbench}.
 
-IRT-Viz-Eval illustrates the benefits of this combined perspective. Programmatic generation provides exact answers; factorial rendering supports controlled invariance evidence; structured records preserve provenance; field-level scoring supports error analysis; and diagnostic baselines test mechanics. At the same time, the validity argument remains bounded. The current benchmark samples synthetic plots, the local run contains no real VLM results, the rationale score needs human validation, and the six style profiles do not represent the full ecology of psychometric graphics.
+IRT-Viz-Eval illustrates the benefits of this combined perspective. Programmatic generation provides exact answers; factorial rendering supports controlled invariance evidence; structured records preserve provenance; field-level scoring supports error analysis; and diagnostic baselines test mechanics. The two real-model administrations add a second lesson. An overall near-tie concealed opposite strengths by task type, a 16.7\% empty-output rate for one routed system, a sixfold difference in median latency, and a different ordering under raw-point rather than task-normalized aggregation. Benchmark construction decisions were therefore not background details; they changed what a comparison would mean.
 
-The next empirical phase should evaluate several versioned vision-capable models under repeated and counterbalanced administrations, with expert review of a stratified response sample. Extensions should include empirical estimation noise, confidence bands, differential item functioning plots, item-fit diagnostics, score-report visualizations, accessibility conditions, and full unfolding-model generators. An external validation study could test whether benchmark performance predicts quality on authentic psychometric review tasks.
+The validity argument remains bounded. The benchmark samples clean synthetic plots, only two routed systems and one response per task were observed, provider defaults were not fully harmonized, the rationale rule needs expert validation, and the six style profiles do not represent the ecology of operational psychometric graphics. The cluster-bootstrap intervals reflect variation across 14 mathematical base stimuli, not model stochasticity, future provider drift, or uncertainty in scoring. In particular, the empirical results do not establish that either model is suitable for unsupervised psychometric decisions.
+
+The next validation phase should repeat administrations, counterbalance plausible prompts, and obtain blinded expert scores for a stratified response sample. Content extensions should include empirical estimation noise, confidence bands, differential item functioning plots, item-fit diagnostics, score-report visualizations, and accessibility conditions. An external study could then test whether benchmark performance predicts quality on authentic psychometric review tasks.
 
 \section{Conclusion}
 
 An LLM benchmark is best understood as a maintained measurement system. Its data are only one component. The prompts define elicitation, the model configuration defines the object, the parser or judge defines the observation, the assembly rule defines the sampled domain, and the validity argument defines what the score can mean. These features distinguish benchmarking from conventional educational and psychological assessment while preserving a shared commitment to evidence-based interpretation.
 
-For social scientists, the practical lesson is straightforward: do not begin with a leaderboard. Begin with an intended use and a defensible capability claim. Build backward to the evidence and tasks, then move forward through standardized administration, scoring, validation, reporting, and maintenance. IRT-Viz-Eval provides one complete implementation of that process and a foundation for studying whether multimodal AI systems can interpret the visual language of psychometrics.
+For social scientists, the practical lesson is straightforward: do not begin or end with a leaderboard. Begin with an intended use and a defensible capability claim. Build backward to the evidence and tasks, then move forward through standardized administration, scoring, validation, reporting, and maintenance. The empirical demonstration showed why: two systems with the same rounded overall score behaved differently across capabilities, output validity, latency, and aggregation rules. IRT-Viz-Eval provides one complete implementation of this process and a bounded foundation for studying multimodal interpretation of psychometric graphics.
 
 \clearpage
 \appendix
@@ -480,14 +564,15 @@ The repository includes a one-command local pipeline, source modules for psychom
 bash scripts/run_local_benchmark.sh
 \end{verbatim}
 
-After installing the optional API dependency and setting an API key locally, a small real-model pilot can be administered with:
+After installing the optional provider dependency and authenticating locally, a small Hugging Face pilot can be administered with:
 
 \begin{verbatim}
-PYTHONPATH=src python3 -m irt_viz_eval.cli run-openai \
-  --models MODEL_ID_1,MODEL_ID_2 --limit 10
+PYTHONPATH=src python3 -m irt_viz_eval.cli run-huggingface \
+  --models MODEL_ID:PROVIDER --limit 10 \
+  --request-timeout 90 --max-retries 1
 \end{verbatim}
 
-The command writes a separate response file and never replaces the diagnostic baselines. Model identifiers are supplied by the researcher because provider availability changes over time. API keys, unpublished response files, and submission correspondence are excluded from version control.
+The adapter supports task limits, repeated administrations, resumable output, bounded timeouts, transient retries, and per-task progress. The repository also includes an OpenAI Responses API adapter; the shared response schema permits future Gemini or local-runtime adapters without changing the task and judgment records. Model identifiers are supplied at runtime because provider availability changes. Credentials are never stored in the repository. The empirical preparation script deduplicates response identifiers, requires complete 198-task coverage, applies the deterministic scorer, and produces the published tables and cluster-bootstrap intervals.
 
 The paper figures can be regenerated with:
 
@@ -495,11 +580,17 @@ The paper figures can be regenerated with:
 python3 paper/generate_figures.py
 \end{verbatim}
 
+The complete empirical outputs used in this manuscript can be regenerated after the two raw response files are present with:
+
+\begin{verbatim}
+PYTHONPATH=src python3 paper/prepare_empirical_results.py
+\end{verbatim}
+
 Downloaded source articles used during manuscript development are not redistributed. Persistent publisher and repository locations are supplied in the reference list where available.
 
 \section{Declarations}
 
-\noindent\textbf{Data and code availability.} An anonymized archive containing the benchmark generator, task records, schemas, prompts, scoring code, diagnostic outputs, tests, and figure-generation scripts accompanies the review submission. The public repository URL will be inserted after double-blind review.
+\noindent\textbf{Data and code availability.} An anonymized archive containing the benchmark generator, task records, schemas, prompts, scoring code, deduplicated model responses and judgments, diagnostic outputs, tests, analysis tables, and figure-generation scripts accompanies the review submission. The public repository URL will be inserted after double-blind review.
 
 \noindent\textbf{Funding.} Funding information is provided separately and withheld from the main document for double-blind review.
 

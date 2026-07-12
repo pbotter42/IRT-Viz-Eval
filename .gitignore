@@ -15,6 +15,7 @@ tmp/
 idea.pdf
 paper/literature/
 Submit Submission*.pdf
+Hugging Face*.pdf
 
 # LaTeX intermediates and duplicate build output.
 paper/*.aux
@@ -32,5 +33,11 @@ data/benchmark/openai_responses*.jsonl
 data/benchmark/openai_judgments*.jsonl
 data/benchmark/huggingface_responses*.jsonl
 data/benchmark/huggingface_judgments*.jsonl
+data/benchmark/hf_*_responses.jsonl
+data/benchmark/hf_*_judgments.jsonl
+data/benchmark/hf_*_test.jsonl
 output/openai_analysis/
+output/empirical_analysis/
+output/hf_*/
+output/huggingface_analysis/
 output/submission/

@@ -9,6 +9,7 @@ SOURCE_DIR="$OUT/CEJEME_LaTeX_Source"
 SUPPLEMENT_DIR="$OUT/CEJEME_Anonymous_Code_Supplement"
 
 cd "$ROOT"
+python3 paper/prepare_empirical_results.py
 python3 paper/generate_figures.py
 latexmk -pdf -cd paper/manuscript.tex
 
@@ -29,9 +30,11 @@ rm -rf "$SUPPLEMENT_DIR"
 mkdir -p "$SUPPLEMENT_DIR/paper" "$SUPPLEMENT_DIR/scripts" "$SUPPLEMENT_DIR/output"
 cp -R src data schemas prompts tests "$SUPPLEMENT_DIR/"
 cp -R output/analysis "$SUPPLEMENT_DIR/output/"
+cp -R output/empirical_analysis "$SUPPLEMENT_DIR/output/"
+cp paper/prepare_empirical_results.py "$SUPPLEMENT_DIR/paper/"
 cp paper/generate_figures.py "$SUPPLEMENT_DIR/paper/"
 cp scripts/run_local_benchmark.sh "$SUPPLEMENT_DIR/scripts/"
-cp pyproject.toml requirements.txt requirements-openai.txt "$SUPPLEMENT_DIR/"
+cp pyproject.toml requirements.txt requirements-openai.txt requirements-huggingface.txt "$SUPPLEMENT_DIR/"
 cp submission/ANONYMOUS_SUPPLEMENT_README.md "$SUPPLEMENT_DIR/README.md"
 find "$SUPPLEMENT_DIR" -type d -name __pycache__ -prune -exec rm -rf {} +
 find "$SUPPLEMENT_DIR" -type f -name '*.pyc' -delete

@@ -1,13 +1,14 @@
 # IRT-Viz-Eval Anonymous Review Supplement
 
 This archive accompanies the anonymized manuscript, "How Large Language Model
-Benchmarks Are Built: A Measurement-Oriented Tutorial with IRT-Viz-Eval."
+Benchmarks Are Built: A Measurement-Oriented Tutorial and Empirical
+Demonstration with IRT-Viz-Eval."
 
 It contains the benchmark generator, generated stimuli and task records, JSON
-schemas, prompts, deterministic baselines and judgments, analysis outputs,
-tests, and figure-generation code. It contains no API key, paid API output,
-author metadata, Git history, submission correspondence, or downloaded source
-articles.
+schemas, prompts, deterministic baselines and judgments, deduplicated model
+responses and judgments, empirical analysis outputs, tests, and
+figure-generation code. It contains no API key, author metadata, Git history,
+submission correspondence, or downloaded source articles.
 
 Run the offline benchmark pipeline with:
 
@@ -24,6 +25,6 @@ pytest -q
 ```
 
 The diagnostic `oracle`, `noisy`, and `blind` responses validate software
-mechanics. They are not outputs from actual language models. The optional API
-adapter requires a locally supplied key and model identifiers; no credentials
-or paid-run outputs are included in this review archive.
+mechanics. They are not outputs from actual language models. The empirical
+files contain complete 198-task administrations of GLM-4.5V and Gemma 3 4B
+through Hugging Face Inference Providers. No credentials are included.

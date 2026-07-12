@@ -1,15 +1,11 @@
 # CEJEME Submission Steps
 
-## Before any paid model run
+## Empirical results completed
 
-1. Create an OpenAI API account and enable API billing; a ChatGPT subscription is separate.
-2. Install the adapter with `python3 -m pip install -e '.[openai]'`.
-3. Set `OPENAI_API_KEY` in the shell. Never place the key in this repository.
-4. Choose API model identifiers visible to the account. Prefer pinned snapshots when available.
-5. Run a 10-task, one-repetition pilot and inspect cost, parsing, and image readability.
-6. Freeze the model list, settings, repetitions, exclusions, and analysis before the full run.
-
-Real-model results are not required for the tutorial's benchmark-construction claim. They are required before making claims about actual model competence or model differences. If collected before submission, add the resulting empirical findings only after the protocol and scoring have been frozen.
+1. GLM-4.5V and Gemma 3 4B each completed the frozen 198-task form through Hugging Face Inference Providers.
+2. The empirical preparation script deduplicates response identifiers, requires complete coverage, applies deterministic scoring, and calculates cluster-bootstrap intervals.
+3. Do not rerun or replace the frozen model responses unless the manuscript is revised to describe a new administration.
+4. Never place Hugging Face or vendor API tokens in the repository or submission files.
 
 ## Author details to complete
 
@@ -23,7 +19,7 @@ Real-model results are not required for the tutorial's benchmark-construction cl
 1. Run `bash scripts/build_cejeme_submission.sh`.
 2. Confirm `output/submission/CEJEME_Main_Document.pdf` is no more than 40 pages.
 3. Check that the abstract is no more than 120 words and there are 3-5 keywords.
-4. Inspect all pages, tables, and 12 figures at readable zoom.
+4. Inspect all pages, tables, and 14 figures at readable zoom.
 5. Confirm the main document contains no author identity or public repository URL.
 6. If requested by the editor, upload `output/submission/CEJEME_Anonymous_Code_Supplement.zip` as supplemental material.
 

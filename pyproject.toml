@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "irt-viz-eval"
-version = "0.1.0"
+version = "0.2.0"
 description = "A benchmark for evaluating multimodal AI interpretation of IRT and psychometric figures."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -49,6 +49,15 @@ def _completed_ids(output_path: Path) -> set[str]:
     return {str(row["response_id"]) for row in read_jsonl(output_path) if row.get("status", "completed") == "completed"}
 
 
+def _is_retryable(exc: Exception) -> bool:
+    name = type(exc).__name__.lower()
+    if any(marker in name for marker in ("timeout", "connection", "network", "transport")):
+        return True
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    return status_code in {408, 409, 425, 429} or (isinstance(status_code, int) and status_code >= 500)
+
+
 def run_huggingface_models(
     tasks_path: str | Path,
     output_path: str | Path,
@@ -56,6 +65,9 @@ def run_huggingface_models(
     *,
     repetitions: int = 1,
     max_tokens: int = 600,
+    request_timeout: float = 180.0,
+    max_retries: int = 2,
+    retry_backoff_seconds: float = 2.0,
     limit: int | None = None,
     resume: bool = True,
     fail_fast: bool = False,
@@ -65,6 +77,10 @@ def run_huggingface_models(
     """Run tasks with routed HF providers; ``:cheapest`` is accepted in model ids."""
     if repetitions < 1:
         raise ValueError("repetitions must be at least 1")
+    if request_timeout <= 0:
+        raise ValueError("request_timeout must be greater than zero")
+    if max_retries < 0:
+        raise ValueError("max_retries cannot be negative")
     model_list = [model.strip() for model in models if model.strip()]
     if not model_list:
         raise ValueError("At least one model identifier is required")
@@ -74,7 +90,7 @@ def run_huggingface_models(
     except ImportError as exc:
         raise RuntimeError("Install the Hugging Face extra with: pip install -e '.[huggingface]'") from exc
 
-    factory = client_factory or (lambda model: InferenceClient(model=model))
+    factory = client_factory or (lambda model: InferenceClient(model=model, timeout=request_timeout))
     tasks_file = Path(tasks_path)
     target = Path(output_path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -84,33 +100,54 @@ def run_huggingface_models(
         tasks = tasks[: max(limit, 0)]
     completed = _completed_ids(target) if resume else set()
     counts = {"completed": 0, "failed": 0, "skipped": 0}
+    total_requests = len(tasks) * len(model_list) * repetitions
+    request_number = 0
 
     for task in tasks:
         image = _resolve_image(str(task["image_path"]), tasks_file, root)
         image_url = _image_data_url(image)
         for model in model_list:
             for repetition in range(1, repetitions + 1):
+                request_number += 1
                 response_id = f"{task['task_id']}__huggingface__{_slug(model)}__r{repetition:03d}"
                 if response_id in completed:
                     counts["skipped"] += 1
                     continue
+                print(
+                    f"[{request_number}/{total_requests}] Requesting {model} for {task['task_id']} "
+                    f"(repetition {repetition})",
+                    flush=True,
+                )
                 started_at = datetime.now(timezone.utc).isoformat()
                 started = time.perf_counter()
                 try:
                     client = factory(model)
-                    response = client.chat.completions.create(
-                        model=model,
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": task["prompt"]},
-                                    {"type": "image_url", "image_url": {"url": image_url}},
+                    for attempt in range(max_retries + 1):
+                        try:
+                            response = client.chat.completions.create(
+                                model=model,
+                                messages=[
+                                    {
+                                        "role": "user",
+                                        "content": [
+                                            {"type": "text", "text": task["prompt"]},
+                                            {"type": "image_url", "image_url": {"url": image_url}},
+                                        ],
+                                    }
                                 ],
-                            }
-                        ],
-                        max_tokens=max_tokens,
-                    )
+                                max_tokens=max_tokens,
+                            )
+                            break
+                        except Exception as exc:
+                            if attempt >= max_retries or not _is_retryable(exc):
+                                raise
+                            delay = retry_backoff_seconds * (2**attempt)
+                            print(
+                                f"  Transient {type(exc).__name__}; retrying in {delay:g}s "
+                                f"({attempt + 1}/{max_retries})",
+                                flush=True,
+                            )
+                            time.sleep(delay)
                     message = response.choices[0].message
                     raw_output = str(getattr(message, "content", ""))
                     returned_model = str(getattr(response, "model", model))
@@ -138,6 +175,10 @@ def run_huggingface_models(
                     )
                     completed.add(response_id)
                     counts["completed"] += 1
+                    print(
+                        f"  Completed in {int((time.perf_counter() - started) * 1000)} ms",
+                        flush=True,
+                    )
                 except Exception as exc:
                     append_jsonl(
                         target,
@@ -161,6 +202,7 @@ def run_huggingface_models(
                         },
                     )
                     counts["failed"] += 1
+                    print(f"  Failed: {type(exc).__name__}: {exc}", flush=True)
                     if fail_fast:
                         raise
     return counts

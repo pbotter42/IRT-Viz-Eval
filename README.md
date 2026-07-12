@@ -19,10 +19,13 @@ responses against known answers, and aggregates model performance.
 - Metadata schemas for stimuli, tasks, target responses, and judgments.
 - Offline baselines and deterministic scoring so the full pipeline runs without API keys.
 - A resumable OpenAI Responses API adapter for real vision-model administrations.
+- A resumable Hugging Face Inference Providers adapter with bounded timeouts,
+  retries, provider-specific routing, and progress reporting.
 - Prompt templates for real target VLM runs and MLLM-as-a-judge scoring.
 - A CEJEME-formatted methodological tutorial for social scientists, using IRT-Viz-Eval
-  as a worked example of LLM benchmark construction.
-- Twelve reproducible process diagrams and result figures for the manuscript.
+  as a worked example of LLM benchmark construction and two complete 198-task
+  model administrations.
+- Fourteen reproducible process diagrams and result figures for the manuscript.
 
 ## Quickstart
 
@@ -100,13 +103,27 @@ After `hf auth login`, install the optional adapter and run a ten-task pilot:
 ```bash
 python3 -m pip install -e '.[huggingface]'
 PYTHONPATH=src python3 -m irt_viz_eval.cli run-huggingface \
-  --models Qwen/Qwen3-VL-2B-Instruct:cheapest \
-  --limit 10
+  --models MODEL_ID:PROVIDER \
+  --limit 10 \
+  --request-timeout 90 \
+  --max-retries 1
 ```
 
 The default output is `data/benchmark/huggingface_responses.jsonl`. It is
 resumable and never overwrites the diagnostic baseline responses. Score it with
 the existing `judge` command, then analyze it using a separate output directory.
+Provider calls time out after 180 seconds, retry transient failures twice, and
+print per-task progress. Override these safeguards with `--request-timeout` and
+`--max-retries` when a provider requires different limits.
+
+The CEJEME empirical demonstration administered GLM-4.5V through Novita and
+Gemma 3 4B through DeepInfra, both routed by Hugging Face. After the two raw
+198-task response files are present, reproduce deduplication, deterministic
+scoring, cluster-bootstrap intervals, and comparative tables with:
+
+```bash
+PYTHONPATH=src python3 paper/prepare_empirical_results.py
+```
 
 ## Dataset Design
 
@@ -132,8 +149,7 @@ excluded from GitHub.
 Regenerate all manuscript figures and compile from the repository root with:
 
 ```bash
-python3 paper/generate_figures.py
-latexmk -pdf -cd paper/manuscript.tex
+bash scripts/build_cejeme_submission.sh
 ```
 
 The final delivery PDF is written to

@@ -16,6 +16,7 @@ from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Rectangl
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "paper" / "figures"
 IMAGES = ROOT / "data" / "benchmark" / "images"
+EMPIRICAL = ROOT / "output" / "empirical_analysis"
 
 BLUE = "#0072B2"
 ORANGE = "#E69F00"
@@ -494,6 +495,86 @@ def real_model_administration() -> None:
     save(fig, "real_model_administration")
 
 
+def empirical_model_results() -> None:
+    overall = pd.read_csv(EMPIRICAL / "overall_results.csv")
+    tasks = pd.read_csv(EMPIRICAL / "task_type_results.csv")
+    model_order = ["GLM-4.5V", "Gemma 3 4B"]
+    palette = {"GLM-4.5V": BLUE, "Gemma 3 4B": ORANGE}
+    task_labels = {
+        "model_identification": "Identify",
+        "parameter_estimation": "Parameters",
+        "probability_at_theta_0.0": "Probability",
+        "information_peak": "Information",
+        "category_curve_reasoning": "Categories",
+        "tcc_expected_score": "Test score",
+        "non_monotonic_peak": "Non-monotonic",
+    }
+    task_order = list(task_labels.values())
+    tasks["task_label"] = tasks["task_type"].map(task_labels)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.75), gridspec_kw={"width_ratios": [0.75, 1.9]})
+    ax = axes[0]
+    indexed = overall.set_index("target_model_name")
+    values = np.array([indexed.loc[model, "mean_normalized_score"] for model in model_order])
+    lower = values - np.array([indexed.loc[model, "ci_low"] for model in model_order])
+    upper = np.array([indexed.loc[model, "ci_high"] for model in model_order]) - values
+    ax.bar(model_order, values, color=[palette[model] for model in model_order], width=0.62)
+    ax.errorbar(np.arange(2), values, yerr=np.vstack([lower, upper]), fmt="none", ecolor=INK, capsize=3, linewidth=1)
+    for index, value in enumerate(values):
+        ax.text(index, value + 0.04, f"{value:.2f}", ha="center", fontsize=8.5)
+    ax.set_ylim(0, 1.08)
+    ax.set_ylabel("Mean normalized score")
+    ax.set_title("Overall score", weight="bold", color=INK)
+    ax.tick_params(axis="x", rotation=18)
+    ax.spines[["top", "right"]].set_visible(False)
+
+    ax2 = axes[1]
+    x = np.arange(len(task_order))
+    width = 0.36
+    for offset, model in zip([-width / 2, width / 2], model_order):
+        subset = tasks[tasks.target_model_name == model].set_index("task_label")
+        task_values = [float(subset.loc[task, "mean_normalized_score"]) for task in task_order]
+        ax2.bar(x + offset, task_values, width=width, color=palette[model], label=model)
+    ax2.set_xticks(x, labels=task_order, rotation=32, ha="right")
+    ax2.set_ylim(0, 1.08)
+    ax2.set_ylabel("Mean normalized score")
+    ax2.set_title("Score profile by task", weight="bold", color=INK)
+    ax2.legend(frameon=False, fontsize=7.5, loc="upper center", ncol=2)
+    ax2.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout(w_pad=2.0)
+    save(fig, "empirical_model_results")
+
+
+def empirical_robustness_profiles() -> None:
+    styles = pd.read_csv(EMPIRICAL / "style_results.csv")
+    families = pd.read_csv(EMPIRICAL / "curve_family_results.csv")
+    model_order = ["GLM-4.5V", "Gemma 3 4B"]
+    palette = {"GLM-4.5V": BLUE, "Gemma 3 4B": ORANGE}
+    style_order = ["matplotlib_light", "seaborn_whitegrid", "ggplot_gray", "grayscale_no_grid", "dark_high_contrast", "lattice_emulation"]
+    style_labels = ["Matplotlib", "Seaborn", "ggplot", "Grayscale", "Dark", "Lattice"]
+    family_order = ["dichotomous_icc", "item_information", "polytomous_crc", "unfolding", "test_characteristic", "test_information"]
+    family_labels = ["ICC", "Item info.", "Categories", "Unfolding", "Test score", "Test info."]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.75))
+    for ax, frame, order, labels, field, title in [
+        (axes[0], styles, style_order, style_labels, "style_profile_id", "Rendering profile"),
+        (axes[1], families, family_order, family_labels, "curve_family", "Curve family"),
+    ]:
+        x = np.arange(len(order))
+        for model in model_order:
+            subset = frame[frame.target_model_name == model].set_index(field)
+            values = [float(subset.loc[item, "mean_normalized_score"]) for item in order]
+            ax.plot(x, values, marker="o", linewidth=1.8, markersize=4.5, color=palette[model], label=model)
+        ax.set_xticks(x, labels=labels, rotation=30, ha="right")
+        ax.set_ylim(0, 1.05)
+        ax.set_ylabel("Mean normalized score")
+        ax.set_title(title, weight="bold", color=INK)
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[1].legend(frameon=False, fontsize=7.5, loc="upper right")
+    fig.tight_layout(w_pad=2.0)
+    save(fig, "empirical_robustness_profiles")
+
+
 def maintenance_cycle() -> None:
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     ax.set_xlim(0, 1)
@@ -530,9 +611,11 @@ def main() -> None:
     scoring_logic()
     validation_profiles()
     real_model_administration()
+    empirical_model_results()
+    empirical_robustness_profiles()
     threats_to_inference()
     maintenance_cycle()
-    print(f"Wrote 12 figures to {OUT}")
+    print(f"Wrote 14 figures to {OUT}")
 
 
 if __name__ == "__main__":

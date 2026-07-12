@@ -1,4 +1,4 @@
-# How Large Language Model Benchmarks Are Built: A Measurement-Oriented Tutorial with IRT-Viz-Eval
+# How Large Language Model Benchmarks Are Built: A Measurement-Oriented Tutorial and Empirical Demonstration with IRT-Viz-Eval
 
 Preston Botter
 [Department and institution]
@@ -12,6 +12,6 @@ Funding: [Insert funding statement or "This research received no external fundin
 
 Competing interests: [Insert declaration or "The author declares no competing interests."]
 
-Data and code: Code and generated benchmark materials are available in a private repository during double-blind review. The public archival URL and release DOI will be added after review.
+Data and code: Code, generated benchmark materials, deduplicated model responses, judgments, and analysis outputs are available in a private repository during double-blind review. The public archival URL and release DOI will be added after review.
 
 Generative AI disclosure: [Describe any generative AI assistance and the author's verification and responsibility for the final work.]
