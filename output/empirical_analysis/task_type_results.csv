@@ -1,0 +1,36 @@
+target_model_name,task_type,n,mean_normalized_score
+GLM-4.5V,category_curve_reasoning,18,0.125
+GLM-4.5V,information_peak,30,0.9458333333333333
+GLM-4.5V,model_identification,84,0.6389095238095238
+GLM-4.5V,non_monotonic_peak,6,0.8889
+GLM-4.5V,parameter_estimation,24,0.147225
+GLM-4.5V,probability_at_theta_0.0,30,0.8733333333333333
+GLM-4.5V,tcc_expected_score,6,0.8333166666666667
+Gemma 3 12B,category_curve_reasoning,18,0.4722222222222222
+Gemma 3 12B,information_peak,30,0.85
+Gemma 3 12B,model_identification,84,0.5833428571428572
+Gemma 3 12B,non_monotonic_peak,6,0.8333499999999999
+Gemma 3 12B,parameter_estimation,24,0.6749999999999999
+Gemma 3 12B,probability_at_theta_0.0,30,0.41333333333333333
+Gemma 3 12B,tcc_expected_score,6,0.3611
+Gemma 3 4B,category_curve_reasoning,18,0.4444444444444444
+Gemma 3 4B,information_peak,30,0.7208333333333333
+Gemma 3 4B,model_identification,84,0.6984416666666666
+Gemma 3 4B,non_monotonic_peak,6,0.7222333333333334
+Gemma 3 4B,parameter_estimation,24,0.5333333333333333
+Gemma 3 4B,probability_at_theta_0.0,30,0.5666666666666667
+Gemma 3 4B,tcc_expected_score,6,0.36108333333333337
+Qwen2.5-VL 72B,category_curve_reasoning,18,0.6458333333333334
+Qwen2.5-VL 72B,information_peak,30,0.9791666666666666
+Qwen2.5-VL 72B,model_identification,84,0.611122619047619
+Qwen2.5-VL 72B,non_monotonic_peak,6,0.9629666666666666
+Qwen2.5-VL 72B,parameter_estimation,24,0.5972208333333333
+Qwen2.5-VL 72B,probability_at_theta_0.0,30,0.8
+Qwen2.5-VL 72B,tcc_expected_score,6,1.0
+Qwen3-VL 30B,category_curve_reasoning,18,0.5972222222222222
+Qwen3-VL 30B,information_peak,30,0.95
+Qwen3-VL 30B,model_identification,84,0.7301845238095238
+Qwen3-VL 30B,non_monotonic_peak,6,0.9074166666666666
+Qwen3-VL 30B,parameter_estimation,24,0.6416624999999999
+Qwen3-VL 30B,probability_at_theta_0.0,30,0.43333333333333335
+Qwen3-VL 30B,tcc_expected_score,6,0.8333

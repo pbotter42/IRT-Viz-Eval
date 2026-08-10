@@ -89,6 +89,8 @@ def cmd_run_huggingface(args: argparse.Namespace) -> None:
         models=[part.strip() for part in args.models.split(",") if part.strip()],
         repetitions=args.repetitions,
         max_tokens=args.max_tokens,
+        request_timeout=args.request_timeout,
+        max_retries=args.max_retries,
         limit=args.limit,
         resume=not args.no_resume,
         fail_fast=args.fail_fast,
@@ -161,6 +163,8 @@ def build_parser() -> argparse.ArgumentParser:
     hf_run.add_argument("--models", required=True, help="Comma-separated Hub model ids; append :cheapest if desired")
     hf_run.add_argument("--repetitions", type=int, default=1)
     hf_run.add_argument("--max-tokens", type=int, default=600)
+    hf_run.add_argument("--request-timeout", type=float, default=180.0, help="Seconds before a stalled provider call is aborted")
+    hf_run.add_argument("--max-retries", type=int, default=2, help="Retries for transient timeout and connection failures")
     hf_run.add_argument("--limit", type=int, default=None, help="Run only the first N tasks for a pilot")
     hf_run.add_argument("--no-resume", action="store_true")
     hf_run.add_argument("--fail-fast", action="store_true")

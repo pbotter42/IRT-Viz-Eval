@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: Botter
     given-names: Preston
-version: 0.1.0
-date-released: 2026-07-11
+version: 0.2.0
+date-released: 2026-08-10
 repository-code: "https://github.com/pbotter42/IRT-Viz-Eval"
 license: MIT
 keywords:
