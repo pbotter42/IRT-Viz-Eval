@@ -1,0 +1,116 @@
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Overall results for all complete administrations.}
+\label{tab:supp-overall}
+\begin{tabular}{p{0.22\linewidth}cccccc}
+\toprule
+Model & $n$ & Mean & 95\% CI & Points & Empty & Median latency \\
+\midrule
+Qwen2.5-VL 72B & 198 & .719 & [.656, .788] & 905/1236 & 0.0\% & 3.48 s \\
+Qwen3-VL 30B & 198 & .704 & [.643, .774] & 873/1236 & 0.0\% & 2.25 s \\
+GLM-4.5V & 198 & .628 & [.536, .727] & 668/1236 & 16.7\% & 13.79 s \\
+Gemma 3 4B & 198 & .629 & [.587, .673] & 742/1236 & 0.0\% & 2.14 s \\
+Gemma 3 12B & 198 & .600 & [.549, .653] & 782/1236 & 0.0\% & 3.04 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Administration and output-format diagnostics.}
+\label{tab:supp-admin}
+\begin{tabular}{p{0.17\linewidth}p{0.27\linewidth}p{0.24\linewidth}ccc}
+\toprule
+Model & Requested route & Returned identifier & Nonempty & Parseable & Tokens \\
+\midrule
+Qwen2.5-VL 72B & Qwen/Qwen2.5-VL-72B-Instruct:ovhcloud & Qwen2.5-VL-72B-Instruct & 198/198 & 198/198 & 219,565 \\
+Qwen3-VL 30B & Qwen/Qwen3-VL-30B-A3B-Instruct:novita & qwen/qwen3-vl-30b-a3b-instruct & 198/198 & 194/198 & 189,730 \\
+GLM-4.5V & zai-org/GLM-4.5V:novita & zai-org/glm-4.5v & 165/198 & 152/198 & 342,107 \\
+Gemma 3 4B & google/gemma-3-4b-it:deepinfra & google/gemma-3-4b-it & 198/198 & 198/198 & 85,531 \\
+Gemma 3 12B & google/gemma-3-12b-it:deepinfra & google/gemma-3-12b-it & 198/198 & 198/198 & 84,523 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Task-type results for every complete model run.}
+\label{tab:supp-task}
+\begin{tabular}{p{0.24\linewidth}cccccc}
+\toprule
+Task type & $n$ & Qwen2.5-VL 72B & Qwen3-VL 30B & GLM-4.5V & Gemma 3 4B & Gemma 3 12B \\
+\midrule
+Model identification & 84 & .611 & .730 & .639 & .698 & .583 \\
+Parameter estimation & 24 & .597 & .642 & .147 & .533 & .675 \\
+Probability at theta=0 & 30 & .800 & .433 & .873 & .567 & .413 \\
+Information peak & 30 & .979 & .950 & .946 & .721 & .850 \\
+Category-curve reasoning & 18 & .646 & .597 & .125 & .444 & .472 \\
+Test expected score & 6 & 1.000 & .833 & .833 & .361 & .361 \\
+Non-monotonic peak & 6 & .963 & .907 & .889 & .722 & .833 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Curve-family results for every complete model run.}
+\label{tab:supp-family}
+\begin{tabular}{p{0.24\linewidth}cccccc}
+\toprule
+Curve family & $n$ & Qwen2.5-VL 72B & Qwen3-VL 30B & GLM-4.5V & Gemma 3 4B & Gemma 3 12B \\
+\midrule
+Dichotomous ICC & 72 & .619 & .602 & .506 & .603 & .552 \\
+Item information & 48 & .867 & .849 & .841 & .740 & .732 \\
+Polytomous curves & 36 & .656 & .688 & .424 & .546 & .551 \\
+Test characteristic & 12 & .722 & .750 & .694 & .514 & .403 \\
+Test information & 12 & .813 & .813 & .750 & .677 & .698 \\
+Unfolding & 18 & .788 & .658 & .833 & .652 & .604 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{Rendering-profile results for every complete model run.}
+\label{tab:supp-style}
+\begin{tabular}{p{0.28\linewidth}ccccc}
+\toprule
+Rendering profile & Qwen2.5-VL 72B & Qwen3-VL 30B & GLM-4.5V & Gemma 3 4B & Gemma 3 12B \\
+\midrule
+Matplotlib light & .709 & .729 & .599 & .666 & .593 \\
+Seaborn white-grid & .721 & .709 & .646 & .643 & .584 \\
+ggplot gray & .746 & .700 & .630 & .608 & .627 \\
+Grayscale & .717 & .692 & .611 & .627 & .597 \\
+Dark high-contrast & .736 & .683 & .619 & .611 & .555 \\
+Lattice-like & .687 & .712 & .663 & .621 & .644 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\scriptsize
+\caption{All paired cluster-bootstrap differences (row model minus column model).}
+\label{tab:supp-pairs}
+\begin{tabular}{p{0.24\linewidth}p{0.24\linewidth}cc}
+\toprule
+Model A & Model B & Difference & 95\% CI \\
+\midrule
+GLM-4.5V & Gemma 3 4B & -0.001 & [-0.078, .076] \\
+GLM-4.5V & Gemma 3 12B & .028 & [-0.054, .113] \\
+GLM-4.5V & Qwen3-VL 30B & -0.076 & [-0.142, -0.008] \\
+GLM-4.5V & Qwen2.5-VL 72B & -0.091 & [-0.145, -0.039] \\
+Gemma 3 4B & Gemma 3 12B & .029 & [-0.004, .056] \\
+Gemma 3 4B & Qwen3-VL 30B & -0.075 & [-0.141, -0.021] \\
+Gemma 3 4B & Qwen2.5-VL 72B & -0.090 & [-0.145, -0.041] \\
+Gemma 3 12B & Qwen3-VL 30B & -0.104 & [-0.172, -0.047] \\
+Gemma 3 12B & Qwen2.5-VL 72B & -0.120 & [-0.179, -0.066] \\
+Qwen3-VL 30B & Qwen2.5-VL 72B & -0.015 & [-0.042, .008] \\
+\bottomrule
+\end{tabular}
+\end{table}

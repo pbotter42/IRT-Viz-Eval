@@ -13,8 +13,16 @@ tmp/
 
 # Local source material and submission exports are not redistributed.
 idea.pdf
+/*.pdf
 paper/literature/
 Submit Submission*.pdf
+submission/
+output/review/
+scripts/build_*submission.sh
+scripts/build_*word.sh
+scripts/build_*author_version.sh
+paper/format_*docx.py
+paper/insert_author_metadata_docx.py
 
 # LaTeX intermediates and duplicate build output.
 paper/*.aux
@@ -25,12 +33,14 @@ paper/*.fls
 paper/*.log
 paper/*.out
 paper/*.synctex.gz
-paper/manuscript.pdf
+paper/*.pdf
 
 # Paid API runs remain local until reviewed for release.
 data/benchmark/openai_responses*.jsonl
 data/benchmark/openai_judgments*.jsonl
 data/benchmark/huggingface_responses*.jsonl
 data/benchmark/huggingface_judgments*.jsonl
+data/benchmark/hf_*.jsonl
+data/benchmark/hf_*.log
 output/openai_analysis/
 output/submission/

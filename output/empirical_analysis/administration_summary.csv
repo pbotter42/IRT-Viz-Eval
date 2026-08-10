@@ -1,0 +1,6 @@
+target_model_name,requested_model,returned_model,n_raw_rows,n_unique_tasks,duplicates_removed,n_completed,n_api_errors,n_nonempty_outputs,n_parseable_outputs,empty_output_rate,parseable_output_rate,median_latency_ms,latency_q1_ms,latency_q3_ms,total_prompt_tokens,total_completion_tokens,total_tokens
+GLM-4.5V,zai-org/GLM-4.5V:novita,zai-org/glm-4.5v,198,198,0,198,0,165,152,0.16666666666666663,0.7676767676767676,13792.5,8418.0,21931.75,200388,141719,342107
+Gemma 3 4B,google/gemma-3-4b-it:deepinfra,google/gemma-3-4b-it,198,198,0,198,0,198,198,0.0,1.0,2143.0,1753.25,2533.75,65928,19603,85531
+Gemma 3 12B,google/gemma-3-12b-it:deepinfra,google/gemma-3-12b-it,198,198,0,198,0,198,198,0.0,1.0,3040.5,2551.25,4319.5,65928,18595,84523
+Qwen3-VL 30B,Qwen/Qwen3-VL-30B-A3B-Instruct:novita,qwen/qwen3-vl-30b-a3b-instruct,198,198,0,198,0,198,194,0.0,0.9797979797979798,2250.5,1936.25,2756.25,158808,30922,189730
+Qwen2.5-VL 72B,Qwen/Qwen2.5-VL-72B-Instruct:ovhcloud,Qwen2.5-VL-72B-Instruct,198,198,0,198,0,198,198,0.0,1.0,3481.0,2977.75,4322.75,202962,16603,219565

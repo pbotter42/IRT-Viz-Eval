@@ -1,155 +1,141 @@
-# IRT Visual Interpretation Benchmark
+# IRT-Viz-Eval
 
-This repository implements a reproducible benchmark for evaluating how well
-multimodal AI systems interpret Item Response Theory (IRT) and psychometric
-figures. It was built from the project idea in `idea.pdf`.
+IRT-Viz-Eval tests how vision-language models read common Item Response Theory
+(IRT) plots. The benchmark uses generated figures with known parameters, so
+model answers can be scored against stored ground truth rather than subjective
+labels.
 
-The benchmark generates simulated ground truth, renders figures under multiple
-visual styles, asks vision models psychometric interpretation questions, scores
-responses against known answers, and aggregates model performance.
+The current release contains 14 mathematical base stimuli, six rendering
+profiles, 84 images, and 198 scored tasks. Five complete model administrations
+are included.
 
-## What Is Included
+## Included model runs
 
-- Dichotomous IRT curves: 1PL, 2PL, 3PL, and 4PL ICCs.
-- Information curves: item information functions and test information functions.
-- Test-level curves: test characteristic curves.
-- Polytomous models: PCM, GPCM, and GRM category response curves.
-- Non-monotonic curves: transparent ideal-point response curves for unfolding-style stress tests.
-- Adversarial visual styles: matplotlib, seaborn, ggplot-like, grayscale/no-grid, dark/high-contrast, and lattice-like renderings.
-- Metadata schemas for stimuli, tasks, target responses, and judgments.
-- Offline baselines and deterministic scoring so the full pipeline runs without API keys.
-- A resumable OpenAI Responses API adapter for real vision-model administrations.
-- Prompt templates for real target VLM runs and MLLM-as-a-judge scoring.
-- A CEJEME-formatted methodological tutorial for social scientists, using IRT-Viz-Eval
-  as a worked example of LLM benchmark construction.
-- Twelve reproducible process diagrams and result figures for the manuscript.
+| Model route | Provider | Tasks | Mean score |
+|---|---|---:|---:|
+| `Qwen/Qwen2.5-VL-72B-Instruct:ovhcloud` | OVHcloud | 198 | .719 |
+| `Qwen/Qwen3-VL-30B-A3B-Instruct:novita` | Novita | 198 | .704 |
+| `google/gemma-3-4b-it:deepinfra` | DeepInfra | 198 | .629 |
+| `zai-org/GLM-4.5V:novita` | Novita | 198 | .628 |
+| `google/gemma-3-12b-it:deepinfra` | DeepInfra | 198 | .600 |
 
-## Quickstart
+These are task-normalized scores for the recorded model, provider, prompt, and
+scoring configuration. They are not estimates of a general or human-like
+ability.
 
-```bash
-python3 -m pip install -r requirements.txt
-PYTHONPATH=src python3 -m irt_viz_eval.cli all
-```
+## Quick start
 
-Or run:
-
-```bash
-bash scripts/run_local_benchmark.sh
-```
-
-Outputs:
-
-- `data/benchmark/manifest.json`: benchmark run metadata.
-- `data/benchmark/stimuli.jsonl`: rendered figures and ground truth.
-- `data/benchmark/tasks.jsonl`: prompts and expected answers.
-- `data/benchmark/responses.jsonl`: local baseline responses.
-- `data/benchmark/judgments.jsonl`: rubric scores.
-- `output/analysis/`: summary tables and figures.
-
-## Running Real Vision Models
-
-Real model runs use API model identifiers, not consumer labels such as
-"ChatGPT." Keep diagnostic and real responses in separate files. Install the
-optional adapter and set the API key in your shell:
-
-```bash
-python3 -m pip install -e '.[openai]'
-export OPENAI_API_KEY='your-key-here'
-```
-
-Start with a small paid pilot using model identifiers available to your API
-account:
-
-```bash
-PYTHONPATH=src python3 -m irt_viz_eval.cli run-openai \
-  --models MODEL_ID_1,MODEL_ID_2 \
-  --limit 10 \
-  --repetitions 1
-```
-
-The default output is `data/benchmark/openai_responses.jsonl`. The runner stores
-requested and returned model identifiers, timestamps, image detail, latency,
-token usage, repetitions, raw output, and failures. It resumes completed calls
-by default. Check cost and output quality before removing `--limit`; then use at
-least three repetitions if the study will make claims about response stability.
-
-Score and analyze the real responses separately:
-
-```bash
-PYTHONPATH=src python3 -m irt_viz_eval.cli judge \
-  --responses data/benchmark/openai_responses.jsonl \
-  --output data/benchmark/openai_judgments.jsonl
-PYTHONPATH=src python3 -m irt_viz_eval.cli analyze \
-  --judgments data/benchmark/openai_judgments.jsonl \
-  --output output/openai_analysis
-```
-
-The included deterministic judge scores parseable JSON outputs. Failed calls
-remain in the denominator as zero-scored responses unless the analysis protocol
-prespecifies another rule. For free-form outputs or a publication-grade automated review, use
-`prompts/judge_system_prompt.md` with a frontier multimodal judge and store the
-judge result using `schemas/judgment.schema.json`.
-
-The same `tasks.jsonl` and response schema can support additional provider
-adapters. Do not commit API keys or unreviewed paid-run outputs.
-
-### Hugging Face Inference Providers
-
-After `hf auth login`, install the optional adapter and run a ten-task pilot:
-
-```bash
-python3 -m pip install -e '.[huggingface]'
-PYTHONPATH=src python3 -m irt_viz_eval.cli run-huggingface \
-  --models Qwen/Qwen3-VL-2B-Instruct:cheapest \
-  --limit 10
-```
-
-The default output is `data/benchmark/huggingface_responses.jsonl`. It is
-resumable and never overwrites the diagnostic baseline responses. Score it with
-the existing `judge` command, then analyze it using a separate output directory.
-
-## Dataset Design
-
-Each simulated mathematical stimulus is rendered under several style profiles.
-This separates psychometric understanding from superficial chart-template
-recognition. Metadata records include the IRT model, parameters, monotonicity,
-curve family, plotting engine/style, axes, file paths, and exact values at
-selected theta points.
-
-## Paper
-
-The manuscript introduces how LLM benchmarks are designed, how they differ
-from educational and psychological assessments, and how validity, prompting,
-scoring, contamination, uncertainty, and maintenance should be handled. It then
-uses IRT-Viz-Eval as a complete worked example. The source is in
-`paper/manuscript.tex`; references are in `paper/references.bib`. Primary-source
-PDFs consulted during development remain local and are not redistributed.
-
-The submitted main document is anonymized for CEJEME double-blind review. The
-downloaded literature directory and submission correspondence are intentionally
-excluded from GitHub.
-
-Regenerate all manuscript figures and compile from the repository root with:
-
-```bash
-python3 paper/generate_figures.py
-latexmk -pdf -cd paper/manuscript.tex
-```
-
-The final delivery PDF is written to
-`output/pdf/irt_viz_eval_manuscript.pdf`.
-
-## Testing
+IRT-Viz-Eval requires Python 3.10 or newer.
 
 ```bash
 python3 -m pip install -e '.[test]'
-pytest
+PYTHONPATH=src python3 -m irt_viz_eval.cli all
 ```
 
-Tests use a fake API client and do not spend API credits.
+The command generates the benchmark, runs three local diagnostic baselines,
+scores them, and writes summaries to `output/analysis/`. No API key is needed.
 
-## Citation and License
+## Reproduce the reported analysis
 
-Citation metadata are provided in `CITATION.cff`. Source code is released under
-the MIT License. The manuscript is not covered by the software license and
-remains subject to the target journal's publication agreement.
+The five deduplicated response files are in `data/empirical/`. Regenerate the
+judgments, bootstrap intervals, tables, and figures with:
+
+```bash
+PYTHONPATH=src python3 paper/prepare_empirical_results.py
+PYTHONPATH=src python3 paper/generate_supplement.py
+PYTHONPATH=src python3 paper/generate_figures.py \
+  --grayscale --output-dir paper/figures
+```
+
+The reported study uses the deterministic reference rubric. It does not use an
+LLM as a judge. Empty, malformed, or missing requested fields remain in the
+denominator and receive no credit for the affected fields.
+
+## Run another Hugging Face model
+
+Authenticate locally and install the provider adapter:
+
+```bash
+python3 -m pip install -e '.[huggingface]'
+hf auth login
+```
+
+Start with ten tasks and a new output file:
+
+```bash
+PYTHONPATH=src python3 -m irt_viz_eval.cli run-huggingface \
+  --models MODEL_ID:PROVIDER \
+  --limit 10 \
+  --request-timeout 180 \
+  --max-retries 3 \
+  --output data/benchmark/model_pilot.jsonl
+```
+
+If the pilot is sound, rerun without `--limit` and keep the same output path.
+Completed response identifiers are skipped, so an interrupted run resumes
+instead of starting over.
+
+Score and summarize the completed file with:
+
+```bash
+PYTHONPATH=src python3 -m irt_viz_eval.cli judge \
+  --responses data/benchmark/model_pilot.jsonl \
+  --output data/benchmark/model_judgments.jsonl
+PYTHONPATH=src python3 -m irt_viz_eval.cli analyze \
+  --judgments data/benchmark/model_judgments.jsonl \
+  --output output/model_analysis
+```
+
+An OpenAI Responses API adapter is also available through the `openai` optional
+dependency. Consumer ChatGPT or Gemini subscriptions are not API credentials
+and do not define a reproducible administration condition.
+
+## Benchmark contents
+
+The task set covers:
+
+- 1PL, 2PL, 3PL, and 4PL item characteristic curves;
+- item and test information functions;
+- test characteristic curves;
+- PCM, GPCM, and GRM category response curves; and
+- a transparent ideal-point curve used as a non-monotonic stress test.
+
+Each mathematical object is rendered in six styles. The response and judgment
+schemas retain model identifiers, provider routes, timestamps, latency, token
+usage, raw output, parser results, field-level scores, and scoring provenance.
+
+## Repository map
+
+- `src/irt_viz_eval/`: generation, rendering, provider adapters, scoring, and analysis
+- `data/benchmark/`: frozen stimuli, images, tasks, and diagnostic baselines
+- `data/empirical/`: five complete model response files
+- `output/empirical_analysis/`: published judgments and result tables
+- `schemas/`: JSON schemas for benchmark records
+- `prompts/`: target-response and optional judge prompt documentation
+- `paper/`: preprint source, supplement, tables, and figure scripts
+- `tests/`: provider-adapter tests using fake clients
+
+## Build the paper
+
+Install the paper dependency and run the build script:
+
+```bash
+python3 -m pip install -r requirements-paper.txt
+bash scripts/build_preprint.sh
+```
+
+The script creates the grayscale 48-page manuscript and appended supplement at
+`output/pdf/irt_viz_eval_preprint.pdf`.
+
+## Scope
+
+The benchmark samples clean synthetic plots. It does not establish that a model
+can independently review operational psychometric analyses, and it has not been
+validated as a latent-trait scale for AI systems. The raw records are included
+so task profiles, parsing failures, and aggregation choices can be examined
+instead of relying only on the overall ranking.
+
+## Citation and license
+
+Citation metadata are in `CITATION.cff`. Source code is released under the MIT
+License. The manuscript and its figures are not covered by the software license.

@@ -1,0 +1,31 @@
+target_model_name,style_profile_id,n,mean_normalized_score
+GLM-4.5V,dark_high_contrast,33,0.6193696969696969
+GLM-4.5V,ggplot_gray,33,0.6304818181818183
+GLM-4.5V,grayscale_no_grid,33,0.6112909090909091
+GLM-4.5V,lattice_emulation,33,0.6628
+GLM-4.5V,matplotlib_light,33,0.5986606060606061
+GLM-4.5V,seaborn_whitegrid,33,0.6458848484848485
+Gemma 3 12B,dark_high_contrast,33,0.5547151515151515
+Gemma 3 12B,ggplot_gray,33,0.6269363636363636
+Gemma 3 12B,grayscale_no_grid,33,0.5966393939393939
+Gemma 3 12B,lattice_emulation,33,0.6438636363636363
+Gemma 3 12B,matplotlib_light,33,0.5931
+Gemma 3 12B,seaborn_whitegrid,33,0.583760606060606
+Gemma 3 4B,dark_high_contrast,33,0.6112060606060605
+Gemma 3 4B,ggplot_gray,33,0.6076727272727273
+Gemma 3 4B,grayscale_no_grid,33,0.6271181818181818
+Gemma 3 4B,lattice_emulation,33,0.6208030303030303
+Gemma 3 4B,matplotlib_light,33,0.6657515151515151
+Gemma 3 4B,seaborn_whitegrid,33,0.6430242424242424
+Qwen2.5-VL 72B,dark_high_contrast,33,0.7358636363636364
+Qwen2.5-VL 72B,ggplot_gray,33,0.7459636363636363
+Qwen2.5-VL 72B,grayscale_no_grid,33,0.7172636363636363
+Qwen2.5-VL 72B,lattice_emulation,33,0.6868757575757575
+Qwen2.5-VL 72B,matplotlib_light,33,0.7090939393939394
+Qwen2.5-VL 72B,seaborn_whitegrid,33,0.7214666666666666
+Qwen3-VL 30B,dark_high_contrast,33,0.6832575757575757
+Qwen3-VL 30B,ggplot_gray,33,0.6996727272727272
+Qwen3-VL 30B,grayscale_no_grid,33,0.6921818181818181
+Qwen3-VL 30B,lattice_emulation,33,0.7115424242424242
+Qwen3-VL 30B,matplotlib_light,33,0.7292181818181818
+Qwen3-VL 30B,seaborn_whitegrid,33,0.709269696969697

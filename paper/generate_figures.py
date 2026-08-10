@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,6 +17,7 @@ from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch, Rectangl
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "paper" / "figures"
 IMAGES = ROOT / "data" / "benchmark" / "images"
+EMPIRICAL = ROOT / "output" / "empirical_analysis"
 
 BLUE = "#0072B2"
 ORANGE = "#E69F00"
@@ -30,6 +32,35 @@ PALE_BLUE = "#E7F2F8"
 PALE_ORANGE = "#FBF0D5"
 PALE_GREEN = "#E4F3ED"
 PALE_PINK = "#F5E9F2"
+
+GRAYSCALE = False
+LINE_STYLES = ["-", "--", ":", "-.", (0, (5, 1))]
+MARKERS = ["o", "s", "^", "D", "v"]
+HATCHES = ["", "///", "\\\\", "xx", "..."]
+
+
+def configure_theme(grayscale: bool, output_dir: Path | None = None) -> None:
+    global OUT, GRAYSCALE
+    global BLUE, ORANGE, GREEN, PINK, RED, SKY, INK, MID, LIGHT
+    global PALE_BLUE, PALE_ORANGE, PALE_GREEN, PALE_PINK
+
+    GRAYSCALE = grayscale
+    if output_dir is not None:
+        OUT = output_dir
+    if grayscale:
+        BLUE = "#111111"
+        ORANGE = "#4A4A4A"
+        GREEN = "#686868"
+        PINK = "#8A8A8A"
+        RED = "#2E2E2E"
+        SKY = "#A8A8A8"
+        INK = "#111111"
+        MID = "#5E5E5E"
+        LIGHT = "#D8D8D8"
+        PALE_BLUE = "#F4F4F4"
+        PALE_ORANGE = "#E8E8E8"
+        PALE_GREEN = "#F0F0F0"
+        PALE_PINK = "#DEDEDE"
 
 
 def setup() -> None:
@@ -62,6 +93,17 @@ def save(fig: plt.Figure, name: str) -> None:
     plt.close(fig)
 
 
+def read_image(path: Path) -> np.ndarray:
+    image = plt.imread(path)
+    if not GRAYSCALE or image.ndim != 3 or image.shape[-1] < 3:
+        return image
+    luminance = np.dot(image[..., :3], np.array([0.2126, 0.7152, 0.0722]))
+    grayscale = np.repeat(luminance[..., None], 3, axis=2)
+    if image.shape[-1] == 4:
+        grayscale = np.concatenate([grayscale, image[..., 3:4]], axis=2)
+    return grayscale
+
+
 def rounded_box(ax, xy, width, height, text, face, edge, fontsize=8.5, weight="normal"):
     patch = FancyBboxPatch(
         xy,
@@ -82,17 +124,20 @@ def rounded_box(ax, xy, width, height, text, face, edge, fontsize=8.5, weight="n
         fontsize=fontsize,
         color=INK,
         weight=weight,
+        multialignment="center",
+        linespacing=1.12,
+        clip_on=True,
     )
     return patch
 
 
-def arrow(ax, start, end, color=MID, connectionstyle="arc3", lw=1.4):
+def arrow(ax, start, end, color=MID, connectionstyle="arc3", lw=1.7):
     ax.add_patch(
         FancyArrowPatch(
             start,
             end,
             arrowstyle="-|>",
-            mutation_scale=10,
+            mutation_scale=12,
             linewidth=lw,
             color=color,
             connectionstyle=connectionstyle,
@@ -120,8 +165,8 @@ def assessment_vs_benchmark() -> None:
         ("Object", "Model + version + interface"),
         ("Elicitation", "Prompts, inputs, tools, decoding"),
         ("Observation", "Generated outputs, latency, refusals"),
-        ("Score", "Performance on a sampled task distribution"),
-        ("Use", "Model comparison, diagnosis, or selection"),
+        ("Score", "Performance on a\nsampled task distribution"),
+        ("Use", "Model comparison,\ndiagnosis, or selection"),
     ]
 
     ys = np.linspace(0.78, 0.16, 5)
@@ -157,7 +202,13 @@ def claim_evidence_chain() -> None:
         ("Task and stimulus", "What input should elicit that behavior?"),
         ("Scored response", "How is evidence extracted and aggregated?"),
     ]
-    colors = [(PALE_BLUE, BLUE), (PALE_GREEN, GREEN), (PALE_PINK, PINK), (PALE_ORANGE, ORANGE), ("#F2ECE8", RED)]
+    colors = [
+        (PALE_BLUE, BLUE),
+        (PALE_GREEN, GREEN),
+        (PALE_PINK, PINK),
+        (PALE_ORANGE, ORANGE),
+        ("#E6E6E6" if GRAYSCALE else "#F2ECE8", RED),
+    ]
     xs = np.linspace(0.025, 0.815, 5)
     for i, ((head, body), (face, edge), x) in enumerate(zip(labels, colors, xs)):
         rounded_box(ax, (x, 0.36), 0.16, 0.34, "", face, edge)
@@ -166,8 +217,8 @@ def claim_evidence_chain() -> None:
         if i < 4:
             arrow(ax, (x + 0.162, 0.53), (xs[i + 1] - 0.004, 0.53), color=MID)
     ax.text(0.5, 0.86, "Design moves from claims to observations", ha="center", weight="bold", color=INK)
-    ax.text(0.5, 0.16, "Validation asks whether each link is defensible", ha="center", weight="bold", color=INK)
-    arrow(ax, (0.89, 0.30), (0.11, 0.30), color=PINK, connectionstyle="arc3,rad=-0.16")
+    ax.text(0.5, 0.10, "Validation asks whether each link is defensible", ha="center", weight="bold", color=INK)
+    arrow(ax, (0.89, 0.27), (0.11, 0.27), color=PINK, connectionstyle="arc3,rad=-0.10")
     save(fig, "claim_evidence_chain")
 
 
@@ -188,7 +239,16 @@ def benchmark_pipeline() -> None:
     ]
     positions = [(0.04 + i * 0.24, 0.61) for i in range(4)] + [(0.76 - i * 0.24, 0.19) for i in range(4)]
     edge_colors = [BLUE, GREEN, PINK, ORANGE, RED, SKY, PINK, MID]
-    faces = [PALE_BLUE, PALE_GREEN, PALE_PINK, PALE_ORANGE, "#F2ECE8", "#E9F4F8", PALE_PINK, "#EDF0F2"]
+    faces = [
+        PALE_BLUE,
+        PALE_GREEN,
+        PALE_PINK,
+        PALE_ORANGE,
+        "#E6E6E6" if GRAYSCALE else "#F2ECE8",
+        "#ECECEC" if GRAYSCALE else "#E9F4F8",
+        PALE_PINK,
+        "#EAEAEA" if GRAYSCALE else "#EDF0F2",
+    ]
     for i, ((n, head, body), (x, y), edge, face) in enumerate(zip(stages, positions, edge_colors, faces)):
         rounded_box(ax, (x, y), 0.19, 0.22, f"{head}\n{body}", face, edge, fontsize=8.2)
         ax.add_patch(Circle((x + 0.018, y + 0.202), 0.025, facecolor=edge, edgecolor="white", linewidth=0.8))
@@ -219,7 +279,7 @@ def design_matrix() -> None:
         ]
     )
     fig, ax = plt.subplots(figsize=(7.2, 4.05))
-    cmap = plt.matplotlib.colors.ListedColormap(["#F1F3F4", GREEN])
+    cmap = plt.matplotlib.colors.ListedColormap(["#F2F2F2" if GRAYSCALE else "#F1F3F4", "#222222" if GRAYSCALE else GREEN])
     ax.imshow(matrix, cmap=cmap, vmin=0, vmax=1, aspect="auto")
     ax.set_xticks(np.arange(len(capabilities)), labels=[fill(x, 14) for x in capabilities])
     ax.set_yticks(np.arange(len(families)), labels=families)
@@ -244,7 +304,7 @@ def factorial_expansion() -> None:
     ax.set_ylim(0, 1)
     ax.axis("off")
     stages = [
-        (0.03, "14", "base mathematical\nstimuli", BLUE, PALE_BLUE),
+        (0.03, "14", "base\nmathematical\nstimuli", BLUE, PALE_BLUE),
         (0.30, "x 6", "rendering\nprofiles", ORANGE, PALE_ORANGE),
         (0.57, "84", "image-level\nstimuli", GREEN, PALE_GREEN),
         (0.80, "198", "scored\ntasks", PINK, PALE_PINK),
@@ -262,7 +322,7 @@ def factorial_expansion() -> None:
 
 
 def instance_anatomy() -> None:
-    img = plt.imread(IMAGES / "3pl_001_icc__matplotlib_light.png")
+    img = read_image(IMAGES / "3pl_001_icc__matplotlib_light.png")
     fig = plt.figure(figsize=(7.2, 5.0))
     grid = fig.add_gridspec(2, 2, width_ratios=[1.15, 1], height_ratios=[1, 1], wspace=0.14, hspace=0.18)
     ax_img = fig.add_subplot(grid[:, 0])
@@ -322,7 +382,7 @@ def style_invariance() -> None:
     ]
     fig, axes = plt.subplots(2, 3, figsize=(7.2, 4.8))
     for ax, (style, label) in zip(axes.flat, styles):
-        img = plt.imread(IMAGES / f"2pl_001_icc__{style}.png")
+        img = read_image(IMAGES / f"2pl_001_icc__{style}.png")
         ax.imshow(img)
         ax.axis("off")
         ax.set_title(label, fontsize=9, weight="bold", color=INK, pad=3)
@@ -353,7 +413,11 @@ def scoring_logic() -> None:
     components = ["Answer\nfields", "Visual\nrationale", "Normalized\ntotal"]
     heights = [3.0, 2.0, 5.0]
     colors = [GREEN, ORANGE, PINK]
-    ax2.bar(components, heights, color=colors, width=0.62)
+    bars = ax2.bar(components, heights, color=colors, width=0.62)
+    if GRAYSCALE:
+        for bar, hatch in zip(bars, HATCHES):
+            bar.set_hatch(hatch)
+            bar.set_edgecolor("black")
     for i, h in enumerate(heights):
         ax2.text(i, h + 0.12, f"up to {h:.0f}", ha="center", fontsize=8, color=INK)
     ax2.set_ylim(0, 5.8)
@@ -390,7 +454,11 @@ def validation_profiles() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.75), gridspec_kw={"width_ratios": [0.8, 1.8]})
     ax = axes[0]
     vals = [float(by_model.loc[by_model.model == m, "mean_normalized_score"].iloc[0]) for m in order]
-    ax.bar(order, vals, color=[palette[m] for m in order], width=0.68)
+    bars = ax.bar(order, vals, color=[palette[m] for m in order], width=0.68)
+    if GRAYSCALE:
+        for bar, hatch in zip(bars, HATCHES):
+            bar.set_hatch(hatch)
+            bar.set_edgecolor("black")
     for i, v in enumerate(vals):
         ax.text(i, v + 0.025, f"{v:.2f}", ha="center", fontsize=8.5)
     ax.set_ylim(0, 1.12)
@@ -402,10 +470,14 @@ def validation_profiles() -> None:
     task_order = ["Identify", "Parameters", "Probability", "Information", "Categories", "Test score", "Non-monotonic"]
     x = np.arange(len(task_order))
     width = 0.24
-    for offset, model in zip([-width, 0, width], order):
+    for model_index, (offset, model) in enumerate(zip([-width, 0, width], order)):
         subset = by_task[by_task.model == model].set_index("task")
         vals2 = [float(subset.loc[t, "mean_normalized_score"]) for t in task_order]
-        ax2.bar(x + offset, vals2, width=width, color=palette[model], label=model)
+        bars2 = ax2.bar(x + offset, vals2, width=width, color=palette[model], label=model)
+        if GRAYSCALE:
+            for bar in bars2:
+                bar.set_hatch(HATCHES[model_index])
+                bar.set_edgecolor("black")
     ax2.set_xticks(x, labels=task_order, rotation=32, ha="right")
     ax2.set_ylim(0, 1.12)
     ax2.set_ylabel("Mean normalized score")
@@ -429,7 +501,17 @@ def threats_to_inference() -> None:
         (0.84, "Claim"),
     ]
     for i, (x, label) in enumerate(nodes):
-        rounded_box(ax, (x, 0.43), 0.12, 0.15, label, "#F5F6F7", MID, fontsize=8.4, weight="bold")
+        rounded_box(
+            ax,
+            (x, 0.43),
+            0.12,
+            0.15,
+            label,
+            "#F5F5F5" if GRAYSCALE else "#F5F6F7",
+            MID,
+            fontsize=8.4,
+            weight="bold",
+        )
         if i < len(nodes) - 1:
             arrow(ax, (x + 0.122, 0.505), (nodes[i + 1][0] - 0.003, 0.505), color=MID)
 
@@ -443,11 +525,20 @@ def threats_to_inference() -> None:
     for x, y, head, body, color in threats:
         ax.add_patch(Circle((x, y), 0.035, facecolor=color, edgecolor="white"))
         ax.text(x, y, "!", ha="center", va="center", color="white", weight="bold", fontsize=11)
-        align_y = y - 0.065 if y > 0.5 else y + 0.065
-        va = "top" if y > 0.5 else "bottom"
-        ax.text(x, align_y, f"{head}\n{fill(body, 27)}", ha="center", va=va, fontsize=7.8, color=INK, weight="bold")
-        target_y = 0.585 if y > 0.5 else 0.425
-        arrow(ax, (x, y - 0.04 if y > 0.5 else y + 0.04), (x, target_y), color=color, lw=1.0)
+        label_y = 0.68 if y > 0.5 else 0.29
+        ax.text(
+            x,
+            label_y,
+            f"{head}\n{fill(body, 27)}",
+            ha="center",
+            va="center",
+            fontsize=7.8,
+            color=INK,
+            weight="bold",
+            linespacing=1.15,
+        )
+        start_y, target_y = (0.61, 0.585) if y > 0.5 else (0.40, 0.425)
+        arrow(ax, (x, start_y), (x, target_y), color=color, lw=1.0)
     ax.text(0.5, 0.95, "Threats can enter at every link between an input and an inference", ha="center", weight="bold", color=INK)
     save(fig, "threats_to_inference")
 
@@ -459,33 +550,33 @@ def real_model_administration() -> None:
     ax.axis("off")
 
     stages = [
-        (0.02, "Frozen form", "Image + prompt\n+ task identifier", BLUE, PALE_BLUE),
-        (0.215, "Adapter", "Same input\ncontract for\neach provider", ORANGE, PALE_ORANGE),
-        (0.41, "Versioned model", "Requested + returned\nmodel identifiers", GREEN, PALE_GREEN),
-        (0.605, "Evidence record", "Raw output, settings,\nlatency, tokens, errors", PINK, PALE_PINK),
-        (0.80, "Scoring", "Parser + fixed rubric\n+ uncertainty", RED, "#F2ECE8"),
+        (0.005, "Frozen form", "Image + prompt\n+ task ID", BLUE, PALE_BLUE),
+        (0.21, "Adapter", "Same input\ncontract for each\nprovider", ORANGE, PALE_ORANGE),
+        (0.415, "Model version", "Model IDs\nrequested + returned", GREEN, PALE_GREEN),
+        (0.62, "Evidence log", "Raw output\nsettings + latency\ntokens + errors", PINK, PALE_PINK),
+        (0.825, "Scoring", "Parser + rubric\n+ uncertainty", RED, "#E6E6E6" if GRAYSCALE else "#F2ECE8"),
     ]
     for i, (x, head, body, edge, face) in enumerate(stages):
         rounded_box(ax, (x, 0.45), 0.16, 0.24, "", face, edge)
         ax.text(x + 0.08, 0.62, head, ha="center", va="center", fontsize=7.8, weight="bold", color=INK)
-        ax.text(x + 0.08, 0.52, body, ha="center", va="center", fontsize=6.8, color=INK)
+        ax.text(x + 0.08, 0.52, body, ha="center", va="center", fontsize=6.8, color=INK, linespacing=1.12)
         if i < len(stages) - 1:
-            arrow(ax, (x + 0.162, 0.57), (stages[i + 1][0] - 0.003, 0.57), color=MID)
+            arrow(ax, (x + 0.166, 0.57), (stages[i + 1][0] - 0.006, 0.57), color=MID)
 
     ax.text(0.50, 0.90, "Administering a benchmark to actual models is a controlled study, not a manual chat", ha="center", weight="bold", color=INK)
     ax.text(
         0.50,
-        0.28,
+        0.22,
         "Repeat across models and administrations",
         ha="center",
         weight="bold",
         color=BLUE,
         bbox={"facecolor": "white", "edgecolor": "none", "pad": 2.5},
     )
-    arrow(ax, (0.88, 0.40), (0.12, 0.40), color=BLUE, connectionstyle="arc3,rad=-0.15")
+    arrow(ax, (0.88, 0.34), (0.12, 0.34), color=BLUE, connectionstyle="arc3,rad=-0.10")
     ax.text(
         0.50,
-        0.10,
+        0.08,
         "Use diagnostic baselines to test mechanics; use real model calls only when making claims about model performance.",
         ha="center",
         color=MID,
@@ -494,31 +585,191 @@ def real_model_administration() -> None:
     save(fig, "real_model_administration")
 
 
+def empirical_model_results() -> None:
+    overall = pd.read_csv(EMPIRICAL / "overall_results.csv")
+    tasks = pd.read_csv(EMPIRICAL / "task_type_results.csv")
+    model_order = ["GLM-4.5V", "Gemma 3 4B", "Gemma 3 12B", "Qwen3-VL 30B", "Qwen2.5-VL 72B"]
+    model_labels = {
+        "GLM-4.5V": "GLM-4.5V",
+        "Gemma 3 4B": "Gemma 4B",
+        "Gemma 3 12B": "Gemma 12B",
+        "Qwen3-VL 30B": "Qwen3-VL\n30B",
+        "Qwen2.5-VL 72B": "Qwen2.5-VL\n72B",
+    }
+    palette = {
+        "GLM-4.5V": BLUE,
+        "Gemma 3 4B": ORANGE,
+        "Gemma 3 12B": GREEN,
+        "Qwen3-VL 30B": PINK,
+        "Qwen2.5-VL 72B": RED,
+    }
+    task_labels = {
+        "model_identification": "Identify",
+        "parameter_estimation": "Parameters",
+        "probability_at_theta_0.0": "Probability",
+        "information_peak": "Information",
+        "category_curve_reasoning": "Categories",
+        "tcc_expected_score": "Test score",
+        "non_monotonic_peak": "Non-monotonic",
+    }
+    task_order = list(task_labels.values())
+    tasks["task_label"] = tasks["task_type"].map(task_labels)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 4.35), gridspec_kw={"width_ratios": [0.85, 1.85]})
+    ax = axes[0]
+    indexed = overall.set_index("target_model_name")
+    values = np.array([indexed.loc[model, "mean_normalized_score"] for model in model_order])
+    lower = values - np.array([indexed.loc[model, "ci_low"] for model in model_order])
+    upper = np.array([indexed.loc[model, "ci_high"] for model in model_order]) - values
+    y = np.arange(len(model_order))
+    bars = ax.barh(y, values, color=[palette[model] for model in model_order], height=0.62)
+    if GRAYSCALE:
+        for bar, hatch in zip(bars, HATCHES):
+            bar.set_hatch(hatch)
+            bar.set_edgecolor("black")
+    ax.errorbar(values, y, xerr=np.vstack([lower, upper]), fmt="none", ecolor=INK, capsize=3, linewidth=1)
+    for index, value in enumerate(values):
+        right_edge = value + upper[index]
+        ax.text(min(right_edge + 0.025, 1.04), index, f"{value:.2f}", va="center", fontsize=8.0)
+    ax.set_xlim(0, 1.08)
+    ax.set_yticks(y, labels=[model_labels[model] for model in model_order])
+    ax.set_xlabel("Mean normalized score")
+    ax.set_title("Overall score", weight="bold", color=INK)
+    ax.spines[["top", "right"]].set_visible(False)
+
+    ax2 = axes[1]
+    x = np.arange(len(task_order))
+    for model_index, model in enumerate(model_order):
+        subset = tasks[tasks.target_model_name == model].set_index("task_label")
+        task_values = [float(subset.loc[task, "mean_normalized_score"]) for task in task_order]
+        ax2.plot(
+            x,
+            task_values,
+            marker=MARKERS[model_index] if GRAYSCALE else "o",
+            linestyle=LINE_STYLES[model_index] if GRAYSCALE else "-",
+            markersize=3.8,
+            linewidth=1.5,
+            color=palette[model],
+            label=model_labels[model].replace("\n", " "),
+        )
+    ax2.set_xticks(x, labels=task_order, rotation=32, ha="right")
+    ax2.set_ylim(0, 1.08)
+    ax2.set_ylabel("Mean normalized score")
+    ax2.set_title("Score profile by task", weight="bold", color=INK)
+    ax2.legend(frameon=False, fontsize=6.8, loc="upper center", ncol=2)
+    ax2.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout(w_pad=2.4)
+    save(fig, "empirical_model_results")
+
+
+def empirical_robustness_profiles() -> None:
+    styles = pd.read_csv(EMPIRICAL / "style_results.csv")
+    families = pd.read_csv(EMPIRICAL / "curve_family_results.csv")
+    model_order = ["GLM-4.5V", "Gemma 3 4B", "Gemma 3 12B", "Qwen3-VL 30B", "Qwen2.5-VL 72B"]
+    labels_by_model = {
+        "GLM-4.5V": "GLM-4.5V",
+        "Gemma 3 4B": "Gemma 4B",
+        "Gemma 3 12B": "Gemma 12B",
+        "Qwen3-VL 30B": "Qwen3-VL 30B",
+        "Qwen2.5-VL 72B": "Qwen2.5-VL 72B",
+    }
+    palette = {
+        "GLM-4.5V": BLUE,
+        "Gemma 3 4B": ORANGE,
+        "Gemma 3 12B": GREEN,
+        "Qwen3-VL 30B": PINK,
+        "Qwen2.5-VL 72B": RED,
+    }
+    style_order = ["matplotlib_light", "seaborn_whitegrid", "ggplot_gray", "grayscale_no_grid", "dark_high_contrast", "lattice_emulation"]
+    style_labels = ["Matplotlib", "Seaborn", "ggplot", "Grayscale", "Dark", "Lattice"]
+    family_order = ["dichotomous_icc", "item_information", "polytomous_crc", "unfolding", "test_characteristic", "test_information"]
+    family_labels = ["ICC", "Item info.", "Categories", "Unfolding", "Test score", "Test info."]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.75))
+    for ax, frame, order, labels, field, title in [
+        (axes[0], styles, style_order, style_labels, "style_profile_id", "Rendering profile"),
+        (axes[1], families, family_order, family_labels, "curve_family", "Curve family"),
+    ]:
+        x = np.arange(len(order))
+        for model_index, model in enumerate(model_order):
+            subset = frame[frame.target_model_name == model].set_index(field)
+            values = [float(subset.loc[item, "mean_normalized_score"]) for item in order]
+            ax.plot(
+                x,
+                values,
+                marker=MARKERS[model_index] if GRAYSCALE else "o",
+                linestyle=LINE_STYLES[model_index] if GRAYSCALE else "-",
+                linewidth=1.6,
+                markersize=3.8,
+                color=palette[model],
+                label=labels_by_model[model],
+            )
+        ax.set_xticks(x, labels=labels, rotation=30, ha="right")
+        ax.set_ylim(0, 1.05)
+        ax.set_ylabel("Mean normalized score")
+        ax.set_title(title, weight="bold", color=INK)
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[1].legend(
+        frameon=False,
+        fontsize=6.2,
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.50),
+        borderaxespad=0,
+    )
+    fig.subplots_adjust(right=0.78, bottom=0.23, top=0.90, wspace=0.28)
+    save(fig, "empirical_robustness_profiles")
+
+
 def maintenance_cycle() -> None:
     fig, ax = plt.subplots(figsize=(7.2, 4.2))
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
     stages = [
-        (0.50, 0.82, "Release", "Version data, code, prompts"),
-        (0.80, 0.61, "Monitor", "Track exposure, drift, saturation"),
-        (0.69, 0.25, "Refresh", "Add forms and targeted failures"),
-        (0.31, 0.25, "Revalidate", "Recheck scoring and interpretations"),
-        (0.20, 0.61, "Retire", "Stop unsupported comparisons"),
+        (0.50, 0.82, "Release", "Version data,\ncode, prompts"),
+        (0.80, 0.61, "Monitor", "Exposure, drift,\nsaturation"),
+        (0.69, 0.25, "Refresh", "Add forms and\ntargeted failures"),
+        (0.31, 0.25, "Revalidate", "Check scoring and\ninterpretation"),
+        (0.20, 0.61, "Retire", "Stop unsupported\ncomparisons"),
     ]
     colors = [BLUE, ORANGE, GREEN, PINK, RED]
-    faces = [PALE_BLUE, PALE_ORANGE, PALE_GREEN, PALE_PINK, "#F2ECE8"]
+    faces = [PALE_BLUE, PALE_ORANGE, PALE_GREEN, PALE_PINK, "#E6E6E6" if GRAYSCALE else "#F2ECE8"]
     for i, ((x, y, head, body), color, face) in enumerate(zip(stages, colors, faces)):
-        rounded_box(ax, (x - 0.10, y - 0.07), 0.20, 0.14, f"{head}\n{body}", face, color, fontsize=8)
+        rounded_box(ax, (x - 0.11, y - 0.08), 0.22, 0.16, f"{head}\n{body}", face, color, fontsize=7.4)
         x2, y2, _, _ = stages[(i + 1) % len(stages)]
-        arrow(ax, (x + 0.09 * np.sign(x2 - x), y - 0.04), (x2 - 0.09 * np.sign(x2 - x), y2 + 0.04), color=MID, connectionstyle="arc3,rad=0.08")
-    ax.add_patch(Circle((0.50, 0.50), 0.12, facecolor="#F5F6F7", edgecolor=MID, linewidth=1.2))
+        dx, dy = x2 - x, y2 - y
+        length = max(np.hypot(dx, dy), 1e-6)
+        ux, uy = dx / length, dy / length
+        start = (x + ux * 0.13, y + uy * 0.10)
+        end = (x2 - ux * 0.13, y2 - uy * 0.10)
+        arrow(ax, start, end, color=MID, connectionstyle="arc3,rad=0.06")
+    ax.add_patch(
+        Circle(
+            (0.50, 0.50),
+            0.12,
+            facecolor="#F5F5F5" if GRAYSCALE else "#F5F6F7",
+            edgecolor=MID,
+            linewidth=1.2,
+        )
+    )
     ax.text(0.50, 0.50, "Benchmark\nvalidity window", ha="center", va="center", weight="bold", color=INK)
     ax.text(0.5, 0.96, "Publication begins the benchmark lifecycle; it does not end it", ha="center", weight="bold", color=INK)
     save(fig, "maintenance_cycle")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--grayscale", action="store_true", help="Use print-safe grayscale encodings.")
+    parser.add_argument("--output-dir", type=Path, help="Directory for generated PDF and PNG figures.")
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = parse_args()
+    output_dir = args.output_dir
+    if output_dir is not None and not output_dir.is_absolute():
+        output_dir = ROOT / output_dir
+    configure_theme(args.grayscale, output_dir)
     setup()
     assessment_vs_benchmark()
     claim_evidence_chain()
@@ -530,9 +781,11 @@ def main() -> None:
     scoring_logic()
     validation_profiles()
     real_model_administration()
+    empirical_model_results()
+    empirical_robustness_profiles()
     threats_to_inference()
     maintenance_cycle()
-    print(f"Wrote 12 figures to {OUT}")
+    print(f"Wrote 14 figures to {OUT}")
 
 
 if __name__ == "__main__":
