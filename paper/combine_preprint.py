@@ -36,8 +36,8 @@ def main() -> None:
     TEMP.unlink()
 
     page_count = len(PdfReader(OUTPUT).pages)
-    if page_count != 48:
-        raise RuntimeError(f"Expected 48 pages, found {page_count}")
+    if page_count != 49:
+        raise RuntimeError(f"Expected 49 pages, found {page_count}")
     print(f"Wrote {OUTPUT} ({page_count} pages)")
 
 

@@ -109,7 +109,7 @@ def rounded_box(ax, xy, width, height, text, face, edge, fontsize=8.5, weight="n
         xy,
         width,
         height,
-        boxstyle="round,pad=0.015,rounding_size=0.025",
+        boxstyle="round,pad=0.010,rounding_size=0.025",
         linewidth=1.2,
         facecolor=face,
         edgecolor=edge,
@@ -131,16 +131,30 @@ def rounded_box(ax, xy, width, height, text, face, edge, fontsize=8.5, weight="n
     return patch
 
 
-def arrow(ax, start, end, color=MID, connectionstyle="arc3", lw=1.7):
+def arrow(
+    ax,
+    start,
+    end,
+    color=MID,
+    connectionstyle="arc3",
+    lw=1.7,
+    source_patch=None,
+    target_patch=None,
+):
     ax.add_patch(
         FancyArrowPatch(
             start,
             end,
+            patchA=source_patch,
+            patchB=target_patch,
+            shrinkA=1.5 if source_patch is not None else 0,
+            shrinkB=1.5 if target_patch is not None else 0,
             arrowstyle="-|>",
             mutation_scale=12,
             linewidth=lw,
             color=color,
             connectionstyle=connectionstyle,
+            zorder=3,
         )
     )
 
@@ -170,12 +184,29 @@ def assessment_vs_benchmark() -> None:
     ]
 
     ys = np.linspace(0.78, 0.16, 5)
+    left_boxes = []
+    right_boxes = []
     for i, (y, l, r) in enumerate(zip(ys, left, right)):
-        rounded_box(ax, (0.04, y - 0.06), 0.41, 0.115, f"{l[0]}\n{l[1]}", PALE_BLUE, BLUE)
-        rounded_box(ax, (0.55, y - 0.06), 0.41, 0.115, f"{r[0]}\n{r[1]}", PALE_ORANGE, ORANGE)
-        if i < 4:
-            arrow(ax, (0.245, y - 0.065), (0.245, ys[i + 1] + 0.065), color=BLUE)
-            arrow(ax, (0.755, y - 0.065), (0.755, ys[i + 1] + 0.065), color=ORANGE)
+        left_boxes.append(rounded_box(ax, (0.04, y - 0.06), 0.41, 0.115, f"{l[0]}\n{l[1]}", PALE_BLUE, BLUE))
+        right_boxes.append(rounded_box(ax, (0.55, y - 0.06), 0.41, 0.115, f"{r[0]}\n{r[1]}", PALE_ORANGE, ORANGE))
+
+    for i in range(4):
+        arrow(
+            ax,
+            (0.245, ys[i]),
+            (0.245, ys[i + 1]),
+            color=BLUE,
+            source_patch=left_boxes[i],
+            target_patch=left_boxes[i + 1],
+        )
+        arrow(
+            ax,
+            (0.755, ys[i]),
+            (0.755, ys[i + 1]),
+            color=ORANGE,
+            source_patch=right_boxes[i],
+            target_patch=right_boxes[i + 1],
+        )
 
     ax.plot([0.5, 0.5], [0.11, 0.90], color=LIGHT, linewidth=2)
     ax.text(
@@ -209,13 +240,21 @@ def claim_evidence_chain() -> None:
         (PALE_ORANGE, ORANGE),
         ("#E6E6E6" if GRAYSCALE else "#F2ECE8", RED),
     ]
-    xs = np.linspace(0.025, 0.815, 5)
+    xs = np.linspace(0.015, 0.825, 5)
+    boxes = []
     for i, ((head, body), (face, edge), x) in enumerate(zip(labels, colors, xs)):
-        rounded_box(ax, (x, 0.36), 0.16, 0.34, "", face, edge)
-        ax.text(x + 0.08, 0.62, fill(head, 15), ha="center", va="center", fontsize=8.0, weight="bold", color=INK)
+        boxes.append(rounded_box(ax, (x, 0.36), 0.16, 0.34, "", face, edge))
+        ax.text(x + 0.08, 0.62, fill(head, 14), ha="center", va="center", fontsize=8.0, weight="bold", color=INK)
         ax.text(x + 0.08, 0.48, fill(body, 16), ha="center", va="center", fontsize=7.8, color=INK)
-        if i < 4:
-            arrow(ax, (x + 0.162, 0.53), (xs[i + 1] - 0.004, 0.53), color=MID)
+    for i in range(4):
+        arrow(
+            ax,
+            (xs[i] + 0.08, 0.53),
+            (xs[i + 1] + 0.08, 0.53),
+            color=MID,
+            source_patch=boxes[i],
+            target_patch=boxes[i + 1],
+        )
     ax.text(0.5, 0.86, "Design moves from claims to observations", ha="center", weight="bold", color=INK)
     ax.text(0.5, 0.10, "Validation asks whether each link is defensible", ha="center", weight="bold", color=INK)
     arrow(ax, (0.89, 0.27), (0.11, 0.27), color=PINK, connectionstyle="arc3,rad=-0.10")
@@ -249,18 +288,22 @@ def benchmark_pipeline() -> None:
         PALE_PINK,
         "#EAEAEA" if GRAYSCALE else "#EDF0F2",
     ]
+    boxes = []
     for i, ((n, head, body), (x, y), edge, face) in enumerate(zip(stages, positions, edge_colors, faces)):
-        rounded_box(ax, (x, y), 0.19, 0.22, f"{head}\n{body}", face, edge, fontsize=8.2)
+        boxes.append(rounded_box(ax, (x, y), 0.19, 0.22, f"{head}\n{body}", face, edge, fontsize=8.2))
         ax.add_patch(Circle((x + 0.018, y + 0.202), 0.025, facecolor=edge, edgecolor="white", linewidth=0.8))
         ax.text(x + 0.018, y + 0.202, n, ha="center", va="center", color="white", fontsize=8, weight="bold")
-        if i < len(stages) - 1:
-            x2, y2 = positions[i + 1]
-            if i == 3:
-                arrow(ax, (x + 0.095, y - 0.015), (x2 + 0.095, y2 + 0.235), color=MID)
-            elif i < 3:
-                arrow(ax, (x + 0.193, y + 0.11), (x2 - 0.003, y2 + 0.11), color=MID)
-            else:
-                arrow(ax, (x - 0.003, y + 0.11), (x2 + 0.193, y2 + 0.11), color=MID)
+    for i in range(len(stages) - 1):
+        x, y = positions[i]
+        x2, y2 = positions[i + 1]
+        arrow(
+            ax,
+            (x + 0.095, y + 0.11),
+            (x2 + 0.095, y2 + 0.11),
+            color=MID,
+            source_patch=boxes[i],
+            target_patch=boxes[i + 1],
+        )
     ax.text(0.5, 0.93, "An LLM benchmark is a maintained measurement system, not just a question file", ha="center", weight="bold", color=INK)
     save(fig, "benchmark_pipeline")
 
@@ -310,12 +353,22 @@ def factorial_expansion() -> None:
         (0.80, "198", "scored\ntasks", PINK, PALE_PINK),
     ]
     widths = [0.17, 0.17, 0.17, 0.17]
+    boxes = []
     for i, ((x, value, label, edge, face), w) in enumerate(zip(stages, widths)):
-        rounded_box(ax, (x, 0.29), w, 0.30, "", face, edge)
+        boxes.append(rounded_box(ax, (x, 0.29), w, 0.30, "", face, edge))
         ax.text(x + w / 2, 0.48, value, ha="center", va="center", fontsize=17, weight="bold", color=edge)
         ax.text(x + w / 2, 0.36, label, ha="center", va="center", fontsize=8.4, color=INK)
-        if i < 3:
-            arrow(ax, (x + w + 0.01, 0.44), (stages[i + 1][0] - 0.01, 0.44), color=MID)
+    for i in range(3):
+        x, w = stages[i][0], widths[i]
+        x2, w2 = stages[i + 1][0], widths[i + 1]
+        arrow(
+            ax,
+            (x + w / 2, 0.44),
+            (x2 + w2 / 2, 0.44),
+            color=MID,
+            source_patch=boxes[i],
+            target_patch=boxes[i + 1],
+        )
     ax.text(0.5, 0.84, "Programmatic generation separates mathematical content from visual presentation", ha="center", weight="bold", color=INK)
     ax.text(0.5, 0.10, "A full local pipeline run then created 594 responses and judgments across three diagnostic baselines.", ha="center", color=MID)
     save(fig, "factorial_expansion")
@@ -500,20 +553,30 @@ def threats_to_inference() -> None:
         (0.64, "Scoring"),
         (0.84, "Claim"),
     ]
+    node_boxes = []
     for i, (x, label) in enumerate(nodes):
-        rounded_box(
-            ax,
-            (x, 0.43),
-            0.12,
-            0.15,
-            label,
-            "#F5F5F5" if GRAYSCALE else "#F5F6F7",
-            MID,
-            fontsize=8.4,
-            weight="bold",
+        node_boxes.append(
+            rounded_box(
+                ax,
+                (x, 0.43),
+                0.12,
+                0.15,
+                fill(label, 10),
+                "#F5F5F5" if GRAYSCALE else "#F5F6F7",
+                MID,
+                fontsize=8.4,
+                weight="bold",
+            )
         )
-        if i < len(nodes) - 1:
-            arrow(ax, (x + 0.122, 0.505), (nodes[i + 1][0] - 0.003, 0.505), color=MID)
+    for i in range(len(nodes) - 1):
+        arrow(
+            ax,
+            (nodes[i][0] + 0.06, 0.505),
+            (nodes[i + 1][0] + 0.06, 0.505),
+            color=MID,
+            source_patch=node_boxes[i],
+            target_patch=node_boxes[i + 1],
+        )
 
     threats = [
         (0.10, 0.79, "Contamination", "Prior exposure can mimic capability", RED),
@@ -522,7 +585,7 @@ def threats_to_inference() -> None:
         (0.70, 0.17, "Parser or judge bias", "The scorer can create apparent errors", PINK),
         (0.90, 0.79, "Overgeneralization", "A score travels beyond its sampled domain", GREEN),
     ]
-    for x, y, head, body, color in threats:
+    for threat_index, (x, y, head, body, color) in enumerate(threats):
         ax.add_patch(Circle((x, y), 0.035, facecolor=color, edgecolor="white"))
         ax.text(x, y, "!", ha="center", va="center", color="white", weight="bold", fontsize=11)
         label_y = 0.68 if y > 0.5 else 0.29
@@ -537,8 +600,15 @@ def threats_to_inference() -> None:
             weight="bold",
             linespacing=1.15,
         )
-        start_y, target_y = (0.61, 0.585) if y > 0.5 else (0.40, 0.425)
-        arrow(ax, (x, start_y), (x, target_y), color=color, lw=1.0)
+        start_y = 0.61 if y > 0.5 else 0.40
+        arrow(
+            ax,
+            (x, start_y),
+            (x, 0.505),
+            color=color,
+            lw=1.0,
+            target_patch=node_boxes[threat_index],
+        )
     ax.text(0.5, 0.95, "Threats can enter at every link between an input and an inference", ha="center", weight="bold", color=INK)
     save(fig, "threats_to_inference")
 
@@ -550,18 +620,26 @@ def real_model_administration() -> None:
     ax.axis("off")
 
     stages = [
-        (0.005, "Frozen form", "Image + prompt\n+ task ID", BLUE, PALE_BLUE),
-        (0.21, "Adapter", "Same input\ncontract for each\nprovider", ORANGE, PALE_ORANGE),
-        (0.415, "Model version", "Model IDs\nrequested + returned", GREEN, PALE_GREEN),
-        (0.62, "Evidence log", "Raw output\nsettings + latency\ntokens + errors", PINK, PALE_PINK),
+        (0.015, "Frozen form", "Image + prompt\n+ task ID", BLUE, PALE_BLUE),
+        (0.2175, "Adapter", "Same input\ncontract for each\nprovider", ORANGE, PALE_ORANGE),
+        (0.42, "Model version", "Model IDs\nrequested + returned", GREEN, PALE_GREEN),
+        (0.6225, "Evidence log", "Raw output\nsettings + latency\ntokens + errors", PINK, PALE_PINK),
         (0.825, "Scoring", "Parser + rubric\n+ uncertainty", RED, "#E6E6E6" if GRAYSCALE else "#F2ECE8"),
     ]
+    boxes = []
     for i, (x, head, body, edge, face) in enumerate(stages):
-        rounded_box(ax, (x, 0.45), 0.16, 0.24, "", face, edge)
+        boxes.append(rounded_box(ax, (x, 0.45), 0.16, 0.24, "", face, edge))
         ax.text(x + 0.08, 0.62, head, ha="center", va="center", fontsize=7.8, weight="bold", color=INK)
         ax.text(x + 0.08, 0.52, body, ha="center", va="center", fontsize=6.8, color=INK, linespacing=1.12)
-        if i < len(stages) - 1:
-            arrow(ax, (x + 0.166, 0.57), (stages[i + 1][0] - 0.006, 0.57), color=MID)
+    for i in range(len(stages) - 1):
+        arrow(
+            ax,
+            (stages[i][0] + 0.08, 0.57),
+            (stages[i + 1][0] + 0.08, 0.57),
+            color=MID,
+            source_patch=boxes[i],
+            target_patch=boxes[i + 1],
+        )
 
     ax.text(0.50, 0.90, "Administering a benchmark to actual models is a controlled study, not a manual chat", ha="center", weight="bold", color=INK)
     ax.text(
@@ -734,15 +812,20 @@ def maintenance_cycle() -> None:
     ]
     colors = [BLUE, ORANGE, GREEN, PINK, RED]
     faces = [PALE_BLUE, PALE_ORANGE, PALE_GREEN, PALE_PINK, "#E6E6E6" if GRAYSCALE else "#F2ECE8"]
+    boxes = []
     for i, ((x, y, head, body), color, face) in enumerate(zip(stages, colors, faces)):
-        rounded_box(ax, (x - 0.11, y - 0.08), 0.22, 0.16, f"{head}\n{body}", face, color, fontsize=7.4)
+        boxes.append(rounded_box(ax, (x - 0.11, y - 0.08), 0.22, 0.16, f"{head}\n{body}", face, color, fontsize=7.4))
+    for i, (x, y, _, _) in enumerate(stages):
         x2, y2, _, _ = stages[(i + 1) % len(stages)]
-        dx, dy = x2 - x, y2 - y
-        length = max(np.hypot(dx, dy), 1e-6)
-        ux, uy = dx / length, dy / length
-        start = (x + ux * 0.13, y + uy * 0.10)
-        end = (x2 - ux * 0.13, y2 - uy * 0.10)
-        arrow(ax, start, end, color=MID, connectionstyle="arc3,rad=0.06")
+        arrow(
+            ax,
+            (x, y),
+            (x2, y2),
+            color=MID,
+            connectionstyle="arc3,rad=0.06",
+            source_patch=boxes[i],
+            target_patch=boxes[(i + 1) % len(boxes)],
+        )
     ax.add_patch(
         Circle(
             (0.50, 0.50),
