@@ -124,7 +124,7 @@ python3 -m pip install -r requirements-paper.txt
 bash scripts/build_preprint.sh
 ```
 
-The script creates the grayscale 48-page manuscript and appended supplement at
+The script creates the grayscale 49-page manuscript and appended supplement at
 `output/pdf/irt_viz_eval_preprint.pdf`.
 
 ## Scope

@@ -26,7 +26,7 @@ PYTHONPATH=src "$PYTHON_BIN" paper/generate_figures.py \
 "$PYTHON_BIN" paper/combine_preprint.py
 
 PAGES="$(pdfinfo output/pdf/irt_viz_eval_preprint.pdf | awk '/^Pages:/ {print $2}')"
-if [ "$PAGES" != "48" ]; then
+if [ "$PAGES" != "49" ]; then
   echo "Preprint page check failed: ${PAGES:-unknown} pages" >&2
   exit 1
 fi
